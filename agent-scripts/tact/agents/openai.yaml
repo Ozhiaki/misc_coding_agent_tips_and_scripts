@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tact"
+  short_description: "Write candid, collegial feedback without stage directions"
+  default_prompt: "Rewrite this with tact: keep the useful point, make it collegial, and remove any stage directions."

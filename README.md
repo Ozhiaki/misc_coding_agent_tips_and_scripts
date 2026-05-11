@@ -62,6 +62,16 @@ Cross-agent negotiation protocol for planning documents. Gives multiple reasonin
 
 Key concepts: Decision Register (current negotiated position), Decision Log (append-only negotiation history), Inspiration section (accountability anchor for every plan cycle), explicit activation policy (human invokes, agents don't self-activate).
 
+#### [Tact](agent-scripts/tact/)
+
+Communication skill for writing candid, collegial feedback without revealing rhetorical stage directions. Useful for PRs, reviews, critiques, corrections, refusals, and other relationship-preserving messages.
+
+| Document | Purpose |
+|----------|---------|
+| [SKILL.md](agent-scripts/tact/SKILL.md) | Full skill: framing patterns, PR body structure, review comments, corrections, and final rewrite checks |
+
+Key concepts: keep the useful point intact, frame around practical benefit, avoid accusatory diagnosis, and remove any sentence that explains why the message is being made tactful.
+
 ---
 
 ## Usage
@@ -83,6 +93,9 @@ cp -r agent-scripts/br-issue-tracking/ .claude/skills/br-issue-tracking/
 
 # plan-pact (for Claude)
 cp -r agent-scripts/plan-pact/ .claude/skills/plan-pact/
+
+# tact (for Claude)
+cp -r agent-scripts/tact/ .claude/skills/tact/
 
 # For Codex, use .codex/skills/ instead
 ```
