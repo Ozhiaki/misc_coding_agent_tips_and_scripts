@@ -73,16 +73,16 @@ br update br-a1b2 \
   --acceptance-criteria "All secret endpoints require valid JWT. Invalid/expired tokens return 401. Tokens issued via /auth/login endpoint."
 ```
 
-### Child Tasks (linked at creation time)
+### Child Tasks (with hierarchical IDs)
 
 ```bash
 br create "Design JWT token structure" \
   --type task --priority 1 \
   --parent br-a1b2 \
   -d "Need to define what claims go in the JWT and token lifetime."
+# → br-a1b2.1
 
-# Assume new task ID is br-c3d4
-br update br-c3d4 \
+br update br-a1b2.1 \
   --design "Use standard claims (sub, iat, exp). Add custom 'permissions' claim array. 1 hour lifetime, refresh via separate endpoint." \
   --acceptance-criteria "JWT structure documented. Sample token can be generated and validated."
 
@@ -90,17 +90,21 @@ br create "Implement /auth/login endpoint" \
   --type task --priority 1 \
   --parent br-a1b2 \
   -d "Users need an endpoint to exchange credentials for JWT."
+# → br-a1b2.2
 
-# Assume new task ID is br-e5f6
-br update br-e5f6 \
+br update br-a1b2.2 \
   --design "POST /auth/login accepts {username, password}. Validate against user store. Return {token, expires_at} on success." \
   --acceptance-criteria "Valid credentials return 200 with JWT. Invalid credentials return 401. Endpoint documented in OpenAPI spec."
 ```
 
-**Note**: `--parent` at create time establishes the parent-child relationship
-in one call. To re-parent later, use `br update <child> --parent <new-parent>`
-(or `--parent ''` to remove the parent link). For non-parent-child dependencies
-(blocks, discovered-from, related), use `br dep add` after creation.
+**Notes**:
+- `--parent <ID>` at create time produces hierarchical child IDs (`<parent>.<N>`).
+  This makes epic decomposition visible in the IDs themselves.
+- To re-parent later, use `br update <child> --parent <new-parent>`
+  (or `--parent ''` to remove the parent link). Re-parenting changes the
+  dependency graph but does **not** rename existing hierarchical IDs.
+- For non-parent-child dependencies (blocks, discovered-from, related),
+  use `br dep add` after creation.
 
 For multi-issue creation in a single call, see Example 6 (Bulk Import).
 

@@ -23,32 +23,46 @@ Operational guidance for AI agents using the `beads_rust` (`br`) issue tracker.
   `--deps`, and `-f/--file` (markdown bulk import). Use `br update` to add
   `--design`, `--acceptance-criteria`, and `--notes` after creation.
 
-## Epic Decomposition with `--parent`
+## Hierarchical Child IDs
 
-When creating child issues, use `--parent <ID>` to set a parent-child
-dependency in the same call as creating the issue:
-
-```bash
-br create "Auth system" --type epic    # → br-abc123
-br create "Implement login" --parent br-abc123 --type task
-br create "Implement logout" --parent br-abc123 --type task
-br create "Add OAuth" --parent br-abc123 --type task
-```
-
-Each child gets a normal hash-based ID; the relationship lives in the
-dependency graph, queryable via `br dep tree <epic-id>` and visible in
-`br show <child-id>`. Parent assignment is also re-settable at any time with
-`br update <id> --parent <new-parent>` (use `--parent ''` to remove).
-
-If you want human-readable IDs, use `--slug` independently:
+When creating child issues with `--parent <ID>`, `br` generates hierarchical
+IDs by appending `.N` to the parent's ID:
 
 ```bash
-br create "Fix login redirect" --slug fix-login-redirect
-# → br-fix-login-redirect-8cda
+br create "Auth system" --type epic                              # → br-abc123
+br create "Implement login" --type task --parent br-abc123       # → br-abc123.1
+br create "Implement logout" --type task --parent br-abc123      # → br-abc123.2
+br create "Add OAuth" --type task --parent br-abc123             # → br-abc123.3
 ```
 
-Slugs are normalized (lowercased, alphanumeric + hyphens, capped at 48 chars).
-See `docs/CLI_REFERENCE.md` in the beads_rust repo for the normalization rules.
+The next available child number is allocated automatically; grandchildren
+follow the same pattern (`br-abc123.1.2`). The hierarchy is visible in the
+ID itself and queryable via `br dep tree <epic-id>` and `br show <child-id>`.
+
+Parent assignment is re-settable at any time with `br update <child> --parent
+<new-parent>` (use `--parent ''` to remove the parent link). Note: re-parenting
+changes the parent-child dependency relationship but does **not** rename
+existing hierarchical IDs.
+
+### Human-readable IDs via `--slug`
+
+Independently of hierarchy, you can embed a human-readable slug between the
+prefix and the hash using `--slug`. Slugs apply to **non-hierarchical** IDs
+only; child IDs ignore the slug.
+
+```bash
+br create "Fix login redirect for SSO users" --slug fix-sso-login
+# → br-fix-sso-login-8cda
+
+# Child IDs ignore --slug (the parent.N format wins):
+br create "Sub-task" --parent br-abc123 --slug ignored
+# → br-abc123.1 (slug discarded)
+```
+
+Slugs normalize to lowercase ASCII alphanumerics and single hyphens, capped at
+48 characters. If a slug normalizes to empty (e.g., `--slug "!!!"`), the ID
+falls back to the hash-only format. `--slug` and `--parent` are orthogonal:
+`--slug` shapes top-level IDs; `--parent` produces hierarchical child IDs.
 
 ## Atomic Claim Workflow
 

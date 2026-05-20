@@ -17,17 +17,31 @@ Detailed reference for each text field in `br create` / `br update`.
 - ✗ "Update the code" (too vague)
 - ✗ "Implement the new feature for handling sensitive data in the secret object model with proper defaults" (too long)
 
-**Tip on IDs**: Use `--slug <text>` to embed a human-readable slug in the
-generated ID:
+**Tip on ID shape**: `br` has two independent ID-shape mechanisms:
+
+1. **Hierarchy via `--parent <ID>`**: child IDs are `<parent>.<N>`,
+   e.g., `br-abc123.1`. Grandchildren extend: `br-abc123.1.2`. The next
+   child number is allocated automatically.
+2. **Slugs via `--slug <text>`**: top-level IDs embed the slug between
+   prefix and hash, e.g., `br-fix-sso-login-8cda`. Slugs normalize to
+   lowercase ASCII alphanumerics and single hyphens, capped at 48 chars.
+
+The two are independent. A child ID ignores any `--slug` argument; the
+hierarchical `<parent>.<N>` format wins.
 
 ```bash
+# Hierarchy:
+br create "Auth system" --type epic                          # → br-abc123
+br create "Add SSO" --type task --parent br-abc123           # → br-abc123.1
+
+# Slug on top-level:
 br create "Fix login redirect for SSO users" --slug fix-sso-login
 # → br-fix-sso-login-8cda
-```
 
-This makes IDs scannable in commits, branch names, and `br show` output
-without inflating the title field. Slugs are normalized to lowercase ASCII
-alphanumerics + single hyphens, capped at 48 characters.
+# Slug on child is discarded:
+br create "Sub-task" --parent br-abc123 --slug ignored
+# → br-abc123.2 (slug dropped)
+```
 
 ---
 

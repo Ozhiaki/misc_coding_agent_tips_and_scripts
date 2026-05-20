@@ -189,22 +189,33 @@ This enables efficient chained workflows: close → see unblocked → claim next
 
 ### Decomposing Epics
 
-When creating subtasks for an epic, use `--parent <ID>` at create time:
+When creating subtasks for an epic, use `--parent <ID>` to get hierarchical
+child IDs:
 
 ```bash
 br create "Payment system" --type epic                              # → br-abc123
-br create "Add Stripe integration" --type task --parent br-abc123
-br create "Add PayPal integration" --type task --parent br-abc123
+br create "Add Stripe integration" --type task --parent br-abc123   # → br-abc123.1
+br create "Add PayPal integration" --type task --parent br-abc123   # → br-abc123.2
 ```
 
-Subtasks get normal hash-based IDs; the parent-child relationship lives in
-the dependency graph (visible via `br dep tree br-abc123` and in `br show`
-output). For visual ID scoping, combine with `--slug`:
+The hierarchical IDs (`<parent>.<N>`) make the structure visible in the ID
+itself and keep related work grouped. Grandchildren extend the same pattern
+(`br-abc123.1.2`). The parent-child relationship is also a dependency edge,
+queryable via `br dep tree br-abc123` and visible in `br show <child-id>`.
+
+For visual ID scoping on **non-hierarchical** issues, use `--slug` (slugs
+apply to top-level IDs only; child IDs ignore them):
 
 ```bash
-br create "Add Stripe integration" --type task --parent br-abc123 --slug stripe-int
-# → br-stripe-int-9f0a
+br create "Standalone task" --slug standalone
+# → br-standalone-9f0a (slug works on top-level issues)
+
+br create "Sub-task" --parent br-abc123 --slug ignored
+# → br-abc123.3 (slug discarded; child ID format wins)
 ```
+
+`--slug` and `--parent` are orthogonal: `--slug` shapes top-level IDs;
+`--parent` produces hierarchical child IDs that ignore any provided slug.
 
 When decomposing a large epic, consider writing all subtasks into a single
 markdown file and using `br create -f` — see [BULK_IMPORT.md](BULK_IMPORT.md).
