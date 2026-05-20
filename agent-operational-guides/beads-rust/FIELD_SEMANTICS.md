@@ -17,6 +17,18 @@ Detailed reference for each text field in `br create` / `br update`.
 - ✗ "Update the code" (too vague)
 - ✗ "Implement the new feature for handling sensitive data in the secret object model with proper defaults" (too long)
 
+**Tip on IDs**: Use `--slug <text>` to embed a human-readable slug in the
+generated ID:
+
+```bash
+br create "Fix login redirect for SSO users" --slug fix-sso-login
+# → br-fix-sso-login-8cda
+```
+
+This makes IDs scannable in commits, branch names, and `br show` output
+without inflating the title field. Slugs are normalized to lowercase ASCII
+alphanumerics + single hyphens, capped at 48 characters.
+
 ---
 
 ## description (`-d`, `--description`)
@@ -35,8 +47,20 @@ Detailed reference for each text field in `br create` / `br update`.
 
 **Should NOT contain**:
 - Implementation details (→ design via `br update --design`)
-- Success criteria (→ acceptance via `br update --acceptance`)
+- Success criteria (→ acceptance via `br update --acceptance-criteria`)
 - Progress updates (→ notes via `br update --notes`)
+
+**Setting at create time**:
+
+```bash
+br create "Title" -d "Why this matters..."
+```
+
+**In bulk markdown import**: use `### Description` as an H3 section. The
+first non-empty line after the H2 title (before any H3) is also captured as
+description, but only that first line — subsequent lines are ignored. To
+preserve multi-line descriptions, always use the explicit `### Description`
+section. See `BULK_IMPORT.md`.
 
 **Example**:
 ```
@@ -64,6 +88,8 @@ entire secret as sensitive by default, forcing field-by-field marking.
 
 **How to set**: `br update <id> --design "..."` (can be combined with other updates).
 
+In bulk markdown import, use `### Design` as an H3 section — see `BULK_IMPORT.md`.
+
 **Example**:
 ```
 Add Sensitive bool to SecretObject struct in internal/model/secret.go.
@@ -74,7 +100,7 @@ Sensitive: true.
 
 ---
 
-## acceptance (`--acceptance`)
+## acceptance (`--acceptance-criteria`)
 
 **What it is**: *Success criteria*—how you know it's done.
 
@@ -88,7 +114,11 @@ Sensitive: true.
 - Observable behaviors
 - Edge cases that must work
 
-**How to set**: `br update <id> --acceptance "..."` (alias for `--acceptance-criteria`).
+**How to set**: `br update <id> --acceptance-criteria "..."`.
+
+In bulk markdown import (`br create -f file.md`), the section can be written
+as either `### Acceptance` or `### Acceptance Criteria` — both parse to the
+same field. There is no `--acceptance` short flag on `br update`.
 
 **Format options**:
 - Bullet list of criteria
@@ -158,11 +188,14 @@ br update br-42 --estimate 120
 
 ## Quick Reference
 
-| Field | Flag | Mutable? | Survives Compaction? | One-liner |
-|-------|------|----------|---------------------|-----------|
-| title | positional | Rarely | Yes | What |
-| description | `-d` | No | Yes (summarized) | Why |
-| design | `--design` | Yes | Maybe | How |
-| acceptance | `--acceptance` | Rarely | Yes | Done when |
-| notes | (update) | Append | Yes (summarized) | Progress |
-| estimate | `-e` | Yes | Yes | How long |
+| Field | Create flag | Update flag | Mutable? | Survives Compaction? | One-liner |
+|-------|-------------|-------------|----------|---------------------|-----------|
+| title | positional | `--title` | Rarely | Yes | What |
+| description | `-d` | `--description` | No | Yes (summarized) | Why |
+| design | bulk import only | `--design` | Yes | Maybe | How |
+| acceptance | bulk import only | `--acceptance-criteria` | Rarely | Yes | Done when |
+| notes | not at create | `--notes` (overwrites) | Append manually | Yes (summarized) | Progress |
+| estimate | `-e` | `--estimate` | Yes | Yes | How long |
+| parent | `--parent` | `--parent` | Yes | Yes | Epic link |
+| labels | `-l` | `--add-label`/`--remove-label`/`--set-labels` | Yes | Yes | Categorization |
+| deps | `--deps` | `br dep add` | Yes | Yes | Blocking/related |

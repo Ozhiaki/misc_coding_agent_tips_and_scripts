@@ -19,15 +19,20 @@ This conflates *why* (the problem), *how* (the solution), and *done when* (succe
 
 Beads-rust provides distinct fields for distinct purposes:
 
-| Field | Flag | Purpose | Changes? |
-|-------|------|---------|----------|
-| **title** | positional | What (short name) | Rarely |
-| **description** | `-d` | Why (problem/context) | Never |
-| **design** | `--design` | How (implementation approach) | Often |
-| **acceptance** | `--acceptance` | Done when (success criteria) | Rarely |
-| **notes** | (update only) | Progress log | Each session |
+| Field | Create flag | Update flag | Purpose | Changes? |
+|-------|-------------|-------------|---------|----------|
+| **title** | positional | `--title` | What (short name) | Rarely |
+| **description** | `-d` | `--description` | Why (problem/context) | Never |
+| **design** | bulk import only (`### Design`) | `--design` | How (implementation approach) | Often |
+| **acceptance** | bulk import only (`### Acceptance`) | `--acceptance-criteria` | Done when (success criteria) | Rarely |
+| **notes** | not at create | `--notes` | Progress log | Each session |
+| **parent** | `--parent <ID>` | `--parent <ID>` | Epic membership | When restructured |
+| **labels** | `-l, --labels "a,b,c"` | `--add-label`, `--remove-label`, `--set-labels` | Categorization | When relevant |
+| **deps** | `--deps "type:id,..."` | `br dep add` | Blocking/discovered-from/related | When discovered |
 
-**Note:** `br create` sets title + description. Use `br update` to add or refine `design`, `acceptance`, and `notes`.
+**Notes:**
+- `br create` (single-issue mode) does not accept `--design`, `--acceptance-criteria`, or `--notes`. Use `br update` after creation, or use the bulk markdown import (`br create -f file.md`) which accepts `### Design` and `### Acceptance` sections inline.
+- `br update --acceptance-criteria` is the long form; there is no short `--acceptance` flag — the markdown bulk import accepts `### Acceptance` as an alias for `### Acceptance Criteria`.
 
 ## Why This Matters
 
@@ -46,6 +51,19 @@ Implementation approaches change as you learn. The `--design` field is explicitl
 ### 3. Verification
 
 Acceptance criteria in their own field can be checked mechanically. "Does the implementation satisfy each criterion?" becomes tractable.
+
+### 4. Bulk Creation Path
+
+When creating many issues at once (epics + decomposed tasks, imported
+backlogs, plan-distillation), `br create -f <markdown-file>` accepts all
+the fields above inline. This avoids the create-then-update-then-update
+cycle for each issue. See `BULK_IMPORT.md` in this folder for the grammar.
+
+Importantly, even when using bulk import, the field discipline still
+applies: each issue's `### Description`, `### Design`, and `### Acceptance`
+sections should separate why/how/done-when. The grammar exists *so* that
+field separation is preserved in batch creation, not as an excuse to
+collapse fields together.
 
 ## The Analogy
 
@@ -80,3 +98,4 @@ Ask yourself:
 
 - [Field Semantics](FIELD_SEMANTICS.md) - Detailed breakdown of each field
 - [Examples](EXAMPLES.md) - Before/after patterns
+- [Bulk Import](BULK_IMPORT.md) - Markdown grammar for `br create -f`

@@ -8,13 +8,39 @@ Documentation that agents read once at session start gets treated as suggestions
 
 Think of it like the difference between a style guide on a shelf vs. a linter in CI. Both say the same thing; only one enforces it.
 
-## The Three-Layer Model
+## The Layered Model
 
 ```
+Layer 0: Live Discovery      → ASK br what it supports (capabilities, schema)
 Layer 1: Workflow context    → HOW to use br (commands, session protocol)
 Layer 2: Quality constraints → WHAT standards apply (field requirements)
 Layer 3: Validation          → WHEN to check (post-creation, pre-push)
 ```
+
+### Layer 0: Live Discovery
+
+Before any agent calls a `br` command in a new project, the agent should ask
+`br` itself what it supports. This is more reliable than reading static docs,
+because the CLI is the source of truth and may be ahead of any documentation.
+
+The two discovery entry points:
+
+```bash
+br capabilities --format json                       # Full contract
+br capabilities --command create --format json      # One command's schema
+br robot-docs guide --format json                   # Short agent handbook
+```
+
+`br capabilities` returns `contract_version`, `recommended_entrypoints`,
+`features`, `commands`, `global_flags`, `exit_codes`, `env_vars`, and
+`safety` notes. With `--command`, it adds `command_detail` with canonical
+path, aliases, subcommands, positionals, options, defaults, possible values,
+examples, and safety notes for that command.
+
+Treat the version field in your generated rules. If `contract_version` jumps,
+re-read this layer before relying on memorized flags.
+
+See [DISCOVERY.md](DISCOVERY.md) for details.
 
 ### Layer 1: Workflow Context
 
@@ -65,7 +91,7 @@ These are the constraints to put in Layer 2 (your agent's rules file):
   session-dependent reference. A fresh agent with zero context must be
   able to work the issue from `br show` alone.
 - Always add `--design` for features and tasks (via `br update`).
-- Always add `--acceptance` for bugs and features (via `br update`).
+- Always add `--acceptance-criteria` for bugs and features (via `br update`).
 - Titles must be specific. "Fix auth" → "Fix OAuth implicit grant → PKCE
   in login flow."
 
@@ -81,14 +107,21 @@ These are the constraints to put in Layer 2 (your agent's rules file):
 - Link related issues with `br dep add`.
 - When discovering bugs during feature work, create a bug issue and link
   it with `br dep add <bug> <original> --type discovered-from`.
+
+### CLI Discovery
+- Before running any unfamiliar br command, call:
+    br capabilities --command <name> --format json
+  Use the returned schema to construct invocations. Do not rely on memorized
+  flags if the command hasn't been used in this codebase before.
 ```
 
 ## Verifying the Setup
 
-After wiring in all three layers, test with a fresh agent session:
+After wiring in all four layers, test with a fresh agent session:
 
-1. Does the agent run `br ready` or `br list` at session start? (Layer 1 working)
-2. Does the agent create issues with separate description/design/acceptance? (Layer 2 working)
-3. Does `br lint --status=open` pass after the agent creates issues? (Layer 3 working)
+1. Does the agent call `br capabilities` before unfamiliar commands? (Layer 0 working)
+2. Does the agent run `br ready` or `br list` at session start? (Layer 1 working)
+3. Does the agent create issues with separate description/design/acceptance? (Layer 2 working)
+4. Does `br lint --status=open` pass after the agent creates issues? (Layer 3 working)
 
 If Layer 2 fails, the usual cause is the rules file not being in the right location for your agent tool.

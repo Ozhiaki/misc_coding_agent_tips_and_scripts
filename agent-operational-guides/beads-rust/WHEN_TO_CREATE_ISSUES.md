@@ -62,7 +62,7 @@ br create "Weak password hashing in auth module" \
 # Assume new issue ID is br-201
 br update br-201 \
   --design "Replace MD5 with bcrypt in auth/password.go" \
-  --acceptance "Passwords hashed with bcrypt. Existing MD5 hashes migrated on next login."
+  --acceptance-criteria "Passwords hashed with bcrypt. Existing MD5 hashes migrated on next login."
 
 br dep add br-201 br-X --type discovered-from
 ```
@@ -116,7 +116,7 @@ br create "Fix session token expiration check" --type bug --priority 2 \
 
 # Assume new issue ID is br-202
 br update br-202 \
-  --acceptance "Expired tokens rejected with 401. Token expiration checked on every authenticated request."
+  --acceptance-criteria "Expired tokens rejected with 401. Token expiration checked on every authenticated request."
 ```
 
 ## The Compaction Test
@@ -189,15 +189,25 @@ This enables efficient chained workflows: close → see unblocked → claim next
 
 ### Decomposing Epics
 
-When creating subtasks for an epic, use `--parent` to get hierarchical IDs:
+When creating subtasks for an epic, use `--parent <ID>` at create time:
 
 ```bash
-br create "Epic: Payment system" --type epic    # → br-abc123
-br create "Add Stripe integration" --parent br-abc123   # → br-abc123.1
-br create "Add PayPal integration" --parent br-abc123   # → br-abc123.2
+br create "Payment system" --type epic                              # → br-abc123
+br create "Add Stripe integration" --type task --parent br-abc123
+br create "Add PayPal integration" --type task --parent br-abc123
 ```
 
-The hierarchical IDs make the structure visible and keep related work grouped.
+Subtasks get normal hash-based IDs; the parent-child relationship lives in
+the dependency graph (visible via `br dep tree br-abc123` and in `br show`
+output). For visual ID scoping, combine with `--slug`:
+
+```bash
+br create "Add Stripe integration" --type task --parent br-abc123 --slug stripe-int
+# → br-stripe-int-9f0a
+```
+
+When decomposing a large epic, consider writing all subtasks into a single
+markdown file and using `br create -f` — see [BULK_IMPORT.md](BULK_IMPORT.md).
 
 ## Anti-Patterns
 

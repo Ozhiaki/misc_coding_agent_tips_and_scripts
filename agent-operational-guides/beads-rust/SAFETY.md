@@ -14,6 +14,19 @@
 
 Every git operation requires explicit user action.
 
+## Auto-Flush by Default
+
+Successful mutating commands auto-flush SQLite changes to `.beads/issues.jsonl`
+as they happen. The JSONL is normally current after each `br create` /
+`br update` / `br close`. Use `--no-auto-flush` on a single command to skip
+the export for that operation; `br sync --flush-only` is then the explicit
+catch-up.
+
+`br sync --flush-only` remains useful as:
+- An idempotent final check before staging `.beads/` for commit.
+- A recovery step after using `--no-auto-flush`.
+- A catch-up if auto-flush has been disabled in config.
+
 ## Sync Safety Guards
 
 ### Export Guards (`br sync --flush-only`)
@@ -62,6 +75,26 @@ br update br-42 --claim --force            # Bypasses the check
 
 This prevents accidentally starting work that's blocked by unfinished dependencies.
 
+## Coordination Status (Read-Only Audit)
+
+`br coordination status` is a read-only diagnostic for hidden `in_progress`
+claims. It emits the `br.coordination.v1` envelope describing each active
+claim along with policy-driven advisory fields (`reclaim_allowed_by_policy`,
+`required_human_confirmation`, `evidence_summary`, `suggested_commands`).
+
+```bash
+br coordination status --json
+```
+
+The command never mutates state and never calls Agent Mail directly. When
+Agent Mail snapshots are available offline, pass them via `--reservations`
+and `--agents`. The output's `suggested_commands` may include the audit-
+comment-then-reclaim recipe, but only when enough evidence exists; treat
+suggestions as advisory, not auto-runnable.
+
+This is the canonical pre-reclaim check for any agent picking up work that
+may have been abandoned. See also [WHEN_TO_CREATE_ISSUES.md](WHEN_TO_CREATE_ISSUES.md) on stale claims.
+
 ## Claim Validation
 
 The `--claim` flag also validates assignee:
@@ -92,12 +125,20 @@ br sync --import-only      # Import any JSONL changes from git pull
 ```
 
 ### Ending a session
+
+Mutations auto-flush to JSONL as they happen, so the JSONL is normally
+current. Run `br sync --flush-only` as an idempotent final check before
+staging:
+
 ```bash
-br sync --flush-only       # Export DB to JSONL
-git add .beads/            # Stage (manual!)
+br sync --flush-only       # Idempotent final export check
+git add .beads/            # Stage (manual — br never runs git)
 git commit -m "Update issues"
 git push
 ```
+
+If you used `--no-auto-flush` on any earlier command, or your project config
+disables auto-flush, `br sync --flush-only` is the explicit catch-up.
 
 ### After pulling changes
 ```bash

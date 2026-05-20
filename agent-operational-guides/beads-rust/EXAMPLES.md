@@ -30,7 +30,7 @@ br create "Add Sensitive boolean to SecretObject model" \
 # Assume new issue ID is br-123
 br update br-123 \
   --design "Add Sensitive bool to SecretObject struct in internal/model/secret.go. Default true (fail-safe). Add json:\",omitempty\" tag. Update NewSecretObject() constructor." \
-  --acceptance "SecretObject has Sensitive bool defaulting to true. NewSecretObject() sets it. JSON omits field when true."
+  --acceptance-criteria "SecretObject has Sensitive bool defaulting to true. NewSecretObject() sets it. JSON omits field when true."
 ```
 
 ---
@@ -54,7 +54,7 @@ br create "Fix credential rotation race condition" \
 # Assume new issue ID is br-124
 br update br-124 \
   --design "Add sync.Mutex around credential read-check-rotate sequence in rotator.go. Consider RWMutex if read contention becomes issue." \
-  --acceptance "No credential loss under 100 concurrent rotation attempts. Race detector passes. Existing rotation tests still pass."
+  --acceptance-criteria "No credential loss under 100 concurrent rotation attempts. Race detector passes. Existing rotation tests still pass."
 ```
 
 ---
@@ -70,40 +70,39 @@ br create "Authentication System" \
 
 # Assume new epic ID is br-a1b2
 br update br-a1b2 \
-  --acceptance "All secret endpoints require valid JWT. Invalid/expired tokens return 401. Tokens issued via /auth/login endpoint."
+  --acceptance-criteria "All secret endpoints require valid JWT. Invalid/expired tokens return 401. Tokens issued via /auth/login endpoint."
 ```
 
-### Child Tasks
+### Child Tasks (linked at creation time)
 
 ```bash
-# Create first child task
 br create "Design JWT token structure" \
   --type task --priority 1 \
+  --parent br-a1b2 \
   -d "Need to define what claims go in the JWT and token lifetime."
 
 # Assume new task ID is br-c3d4
 br update br-c3d4 \
   --design "Use standard claims (sub, iat, exp). Add custom 'permissions' claim array. 1 hour lifetime, refresh via separate endpoint." \
-  --acceptance "JWT structure documented. Sample token can be generated and validated."
+  --acceptance-criteria "JWT structure documented. Sample token can be generated and validated."
 
-# Link to parent epic
-br dep add br-a1b2 br-c3d4 --type parent-child
-
-# Create second child task
 br create "Implement /auth/login endpoint" \
   --type task --priority 1 \
+  --parent br-a1b2 \
   -d "Users need an endpoint to exchange credentials for JWT."
 
 # Assume new task ID is br-e5f6
 br update br-e5f6 \
   --design "POST /auth/login accepts {username, password}. Validate against user store. Return {token, expires_at} on success." \
-  --acceptance "Valid credentials return 200 with JWT. Invalid credentials return 401. Endpoint documented in OpenAPI spec."
-
-# Link to parent epic
-br dep add br-a1b2 br-e5f6 --type parent-child
+  --acceptance-criteria "Valid credentials return 200 with JWT. Invalid credentials return 401. Endpoint documented in OpenAPI spec."
 ```
 
-**Note**: Dependencies are added after issue creation using `br dep add`. Use `--type parent-child` to explicitly mark the epic/subtask relationship.
+**Note**: `--parent` at create time establishes the parent-child relationship
+in one call. To re-parent later, use `br update <child> --parent <new-parent>`
+(or `--parent ''` to remove the parent link). For non-parent-child dependencies
+(blocks, discovered-from, related), use `br dep add` after creation.
+
+For multi-issue creation in a single call, see Example 6 (Bulk Import).
 
 ---
 
@@ -131,7 +130,7 @@ br create "Extract Storage interface from concrete implementation" \
 # Assume new issue ID is br-200
 br update br-200 \
   --design "Define Storage interface in internal/storage/storage.go. Move SQLite implementation to internal/storage/sqlite/. Update all callers to use interface." \
-  --acceptance "Storage interface exists. SQLite implements it. Handler tests use mock storage. No direct sqlite imports outside storage package."
+  --acceptance-criteria "Storage interface exists. SQLite implements it. Handler tests use mock storage. No direct sqlite imports outside storage package."
 ```
 
 ---
@@ -167,6 +166,103 @@ br close br-123 --reason "Added Sensitive bool to SecretObject with true default
 - Summarizes what changed (not just "done")
 - Links to the specific commit for verification
 - Stands alone after compaction
+
+---
+
+## Example 6: Bulk Import from Markdown
+
+When creating an epic plus 5+ decomposed tasks, the create-then-update cycle
+is tedious. Use `br create -f` with a structured markdown file.
+
+### The Markdown File
+
+Save as `auth-system-issues.md`:
+
+````markdown
+## Authentication System
+### Type
+epic
+
+### Priority
+P1
+
+### Labels
+auth, security
+
+### Description
+Users need to authenticate before accessing secrets. Currently the API is
+open to anyone with network access.
+
+### Acceptance Criteria
+- All secret endpoints require valid JWT.
+- Invalid/expired tokens return 401.
+- Tokens issued via /auth/login endpoint.
+
+## Design JWT token structure
+### Type
+task
+
+### Priority
+P1
+
+### Parent
+Authentication System
+
+### Description
+Need to define what claims go in the JWT and token lifetime.
+
+### Design
+Use standard claims (sub, iat, exp). Add custom 'permissions' claim array.
+1 hour lifetime, refresh via separate endpoint.
+
+### Acceptance
+- JWT structure documented.
+- Sample token can be generated and validated.
+
+## Implement /auth/login endpoint
+### Type
+task
+
+### Priority
+P1
+
+### Parent
+Authentication System
+
+### Dependencies
+- Design JWT token structure
+
+### Description
+Users need an endpoint to exchange credentials for JWT.
+
+### Design
+POST /auth/login accepts {username, password}. Validate against user store.
+Return {token, expires_at} on success.
+
+### Acceptance
+- Valid credentials return 200 with JWT.
+- Invalid credentials return 401.
+- Endpoint documented in OpenAPI spec.
+````
+
+### Run the Import
+
+```bash
+br create -f auth-system-issues.md --json
+```
+
+This creates all three issues in a single call:
+- The epic gets a hash ID.
+- Each child task is linked to the epic via `### Parent` (referenced by H2 title).
+- The `Implement /auth/login endpoint` task is linked to `Design JWT token structure` via `### Dependencies` (also referenced by title).
+
+**Why this is better than scripting individual `br create` calls:**
+- One atomic command. Partial-failure stories are simpler.
+- Intra-file references resolve symbolically — no need to capture generated IDs and feed them into follow-up commands.
+- Field separation (description / design / acceptance) is preserved at creation rather than backfilled.
+- Easier to review the proposed issues as a markdown document before running.
+
+See [BULK_IMPORT.md](BULK_IMPORT.md) for the full grammar.
 
 ---
 

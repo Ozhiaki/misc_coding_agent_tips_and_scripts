@@ -46,11 +46,16 @@ Before saying "done," complete **all** steps:
 
 ```bash
 br close <id> --reason "Implemented OAuth PKCE flow — see abc1234"
+# Mutations auto-flush. This is the idempotent final check:
 br sync --flush-only
 git add .beads/
 git commit -m "Close <id>: short summary"
 git push
 ```
+
+The auto-flush behavior means JSONL is usually current after `br close`. The
+explicit `--flush-only` exists for parity with the historical Go workflow
+and as recovery insurance.
 
 **Work is NOT done until `git push` succeeds.**
 
@@ -86,5 +91,5 @@ Then claim the next highest-priority unblocked issue and continue.
 | Claim | `update <id> --claim` |
 | Work | `update <id> --notes "..."` (at milestones) |
 | Close | `close <id> --reason "what + commit ref"` |
-| Flush | `sync --flush-only` → `git add/commit/push` |
+| Flush | `sync --flush-only` (idempotent final check) → `git add/commit/push` |
 | Next | `close --suggest-next` or `ready` |

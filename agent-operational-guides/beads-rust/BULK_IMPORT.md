@@ -1,0 +1,201 @@
+# Bulk Import via Markdown
+
+`br create -f <file.md>` (or `--file`) creates many issues in a single call
+by parsing a structured markdown file. This is the canonical way to:
+
+- Distill a planning document into an epic + decomposed tasks.
+- Import an external backlog.
+- Restore a deleted issue set from a markdown snapshot.
+
+The file must have the `.md` or `.markdown` extension. The parser caps file
+size at 10 MB. Symlinks and `..` path traversal are rejected.
+
+## Grammar
+
+````markdown
+## Issue Title                  ← H2 starts a new issue
+### Section Name                ← H3 starts a section within an issue
+Content for that section.
+````
+
+Recognized H3 sections (case-insensitive):
+
+| Section | Maps to | Notes |
+|---|---|---|
+| `### ID` | stand-in ID for intra-file references | Not the real ID |
+| `### Parent` | `--parent` | Accepts real ID, title of another issue in the file, or stand-in ID |
+| `### Priority` | `-p` | `0-4` or `P0-P4` |
+| `### Type` | `-t` | task, bug, feature, epic, chore, docs, question |
+| `### Description` | `-d` | Multi-line, captured in full |
+| `### Design` | `--design` (on update) | Multi-line |
+| `### Acceptance` or `### Acceptance Criteria` | `--acceptance-criteria` | Aliases parse to the same field |
+| `### Assignee` | `-a` | Single name |
+| `### Labels` | `-l` | Comma or whitespace separated; bullets stripped |
+| `### Dependencies` or `### Deps` | `--deps` | See below |
+
+Unknown H3 sections are silently ignored. Section names are case-insensitive.
+
+## Dependency syntax in `### Dependencies`
+
+| Form | Behavior |
+|---|---|
+| `bd-abc123` | Bare ID, defaults to `blocks` dependency type |
+| `blocks:bd-abc123` | Explicit type prefix |
+| `related:bd-abc123`, `discovered-from:bd-abc123`, `parent-child:bd-abc123` | Other types |
+| `external:github:gh-123` | External reference |
+| `- Title Of Another Issue In File` | Title-based intra-file reference; bullet syntax preserves the whole line as a single dep |
+| `- db-1` (where `db-1` is a `### ID` value) | Stand-in ID intra-file reference |
+
+Bulleted lines (`-`, `*`, `+`, with or without `[ ]` / `[x]` checkboxes) are
+treated as **single** dependency references — this is what enables title-based
+deps with spaces. Non-bulleted lines split on commas or whitespace.
+
+## Intra-file references
+
+Two ways to reference issues in the same import file:
+
+1. **By H2 title**: use the exact title text after `## `. Example:
+   ````markdown
+   ## Build Database Schema
+   ### Type
+   task
+
+   ## Build API Endpoints
+   ### Dependencies
+   - Build Database Schema
+   ````
+
+2. **By stand-in `### ID`**: assign each issue a symbolic handle, then
+   reference it. The stand-in ID is **not** the issue's real ID; it's
+   resolved to the generated ID during import.
+
+   ````markdown
+   ## Build Database Schema
+   ### ID
+   db-1
+   ### Type
+   task
+
+   ## Build API Endpoints
+   ### Dependencies
+   db-1
+   ````
+
+References to issues that already exist outside the file resolve normally
+via the issue ID.
+
+## Quirks
+
+- The first non-empty line **immediately after** the `## Title` (before any
+  H3) is captured as the description, but **only that first line**. To
+  preserve multi-line descriptions, always use an explicit `### Description`
+  section.
+- Empty H3 sections are dropped silently.
+- Whitespace and case within H3 headers don't matter: `### priority`,
+  `### PRIORITY`, and `### Priority` all parse identically.
+
+## Example: epic + decomposition with full field separation
+
+````markdown
+## Authentication System
+
+### Type
+epic
+
+### Priority
+P1
+
+### Labels
+auth, security
+
+### Description
+Users need to authenticate before accessing secrets. Currently the API is
+open to anyone with network access.
+
+### Acceptance Criteria
+- All secret endpoints require valid JWT.
+- Invalid/expired tokens return 401.
+- Tokens issued via /auth/login endpoint.
+
+## Design JWT token structure
+
+### Parent
+Authentication System
+
+### Type
+task
+
+### Priority
+P1
+
+### Description
+Need to define what claims go in the JWT and token lifetime.
+
+### Design
+Use standard claims (sub, iat, exp). Add custom 'permissions' claim array.
+1 hour lifetime, refresh via separate endpoint.
+
+### Acceptance
+- JWT structure documented.
+- Sample token can be generated and validated.
+
+## Implement /auth/login endpoint
+
+### Parent
+Authentication System
+
+### Dependencies
+- Design JWT token structure
+
+### Type
+task
+
+### Priority
+P1
+
+### Description
+Users need an endpoint to exchange credentials for JWT.
+
+### Design
+POST /auth/login accepts {username, password}. Validate against user store.
+Return {token, expires_at} on success.
+
+### Acceptance
+- Valid credentials return 200 with JWT.
+- Invalid credentials return 401.
+- Endpoint documented in OpenAPI spec.
+````
+
+Run:
+
+```bash
+br create -f auth-system-issues.md --json
+```
+
+All three issues are created. The two tasks are linked to the epic via
+`### Parent` (title-resolved). The login endpoint task is linked to the
+JWT design task via `### Dependencies` (title-resolved).
+
+## When to prefer bulk import over scripted `br create`
+
+**Use bulk import when:**
+- Creating more than ~5 related issues at once.
+- The work was planned in a document and you're distilling that document.
+- Intra-file references would be tedious to express via shell variable
+  juggling.
+- You want a reviewable markdown artifact of the proposed issues before
+  running anything.
+
+**Use individual `br create` calls when:**
+- Creating 1–3 issues, especially in a flowing conversation.
+- Each issue needs different command-line treatment (e.g., one needs a slug,
+  others don't).
+- The script needs to react to creation output (e.g., `br q` capturing IDs
+  into shell variables for follow-on commands).
+
+## Source of truth
+
+The grammar is implemented in `src/util/markdown_import.rs` in the
+`beads_rust` repo. If the live behavior diverges from this document, the
+parser source wins. Run `br capabilities --command create --format json` to
+see the current `--file` flag documentation directly.
