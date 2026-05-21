@@ -161,3 +161,4 @@ discovery; use `br --json` when a shell pipeline is simpler. See
 - `SAFETY.md`: sync guards, history, and data protection
 - `ERRORS_AND_SCHEMAS.md`: structured error envelope, the two exit-code dictionaries (ordinary vs doctor), and `br schema` targets
 - `RECOVERY.md`: decision tree for sync divergence, three-way merge, force modes, JSONL conflicts, rebuild, stale-claim reclaim, and `br doctor undo`
+- `AGENT_COORDINATION.md`: three coordination problems and the features that address them — `br coordination status`, inherited `agent_context`, attribution and closure-time policy gates

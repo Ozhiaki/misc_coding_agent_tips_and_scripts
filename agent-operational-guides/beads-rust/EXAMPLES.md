@@ -163,13 +163,29 @@ br close br-123 --reason "Implemented"
 ### ✓ After
 
 ```bash
-br close br-123 --reason "Added Sensitive bool to SecretObject with true default — commit e4f5a6b"
+br close br-123 --reason "Added Sensitive bool to SecretObject with true default. commit:e4f5a6b reviewer:alice"
 ```
 
 **Why it works:**
 - Summarizes what changed (not just "done")
 - Links to the specific commit for verification
+- Names the reviewer for accountability
 - Stands alone after compaction
+
+### Typed-reference vocabulary
+
+The `kind:value` tokens (`commit:e4f5a6b`, `reviewer:alice`) are part of
+`br`'s built-in typed-reference vocabulary. The built-in kinds are
+`commit`, `pr`, `reviewer`, `investigation`, `agent-mail`, and `dashboard`.
+They work as plain text without any configuration — close reasons are
+queryable either way.
+
+Projects that want enforcement can opt in via `.beads/policy.yaml`’s
+`require_typed_references` gate, which rejects closes that lack at least
+one token from a configured list of kinds. See `AGENT_COORDINATION.md`.
+
+The upgrade path is no-cost: keep using `kind:value` now and the policy
+is ready to flip on later without rewriting historic close reasons.
 
 ---
 
