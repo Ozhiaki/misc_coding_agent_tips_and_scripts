@@ -159,3 +159,5 @@ discovery; use `br --json` when a shell pipeline is simpler. See
 - `SESSION_PROTOCOL.md`: session lifecycle — start, claim, work, close, flush
 - `AGENT_INTEGRATION.md`: wiring best practices into agent toolchains (three-layer model + Layer 0 discovery)
 - `SAFETY.md`: sync guards, history, and data protection
+- `ERRORS_AND_SCHEMAS.md`: structured error envelope, the two exit-code dictionaries (ordinary vs doctor), and `br schema` targets
+- `RECOVERY.md`: decision tree for sync divergence, three-way merge, force modes, JSONL conflicts, rebuild, stale-claim reclaim, and `br doctor undo`
