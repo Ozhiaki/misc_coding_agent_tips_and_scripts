@@ -29,6 +29,13 @@ Detailed reference for each text field in `br create` / `br update`.
 The two are independent. A child ID ignores any `--slug` argument; the
 hierarchical `<parent>.<N>` format wins.
 
+**Mixed prefixes are supported.** A repo can contain issues from multiple
+prefixes simultaneously (e.g., `auth-` and `pay-` in the same workspace).
+This is normal when consolidating issues across projects or when a sub-
+system owns its own prefix. `br` resolves IDs by exact match on the full
+prefixed form (`auth-abc123`); unprefixed lookups fail with `AMBIGUOUS_ID`
+if more than one prefix has a match.
+
 ```bash
 # Hierarchy:
 br create "Auth system" --type epic                          # → br-abc123
@@ -197,6 +204,66 @@ br create "Refactor module" -e 1d   # 1 day
 # Update later if needed
 br update br-42 --estimate 120
 ```
+
+---
+
+## deps (`--deps`) and external dependencies
+
+**What it is**: Inter-issue links representing blocking, related, or
+derivation relationships.
+
+**Setting at create time** with `--deps`, or post-hoc with `br dep add
+<id> <other> --type <kind>`.
+
+**Dependency types** (`--type`): `blocks` (default), `related`,
+`discovered-from`, `parent-child` (re-prefer `--parent`), `external`.
+
+**External dependencies** track work whose canonical form lives outside
+this `br` workspace (a GitHub issue, a Jira ticket, a separate `br` workspace).
+Syntax:
+
+```bash
+br dep add br-42 'external:github:org/repo#123' --type external
+br dep add br-42 'external:jira:PROJ-456'       --type external
+br dep add br-42 'external:br:other-repo/br-99' --type external
+```
+
+The `external:<service>:<id>` form is opaque to `br` — it's stored as a
+string reference and surfaces in `br dep tree` / `br show` so reviewers
+can follow the link. `br` does not fetch or validate the external target.
+
+---
+
+## Comments (`br comments`)
+
+**What it is**: Append-only commentary on an issue. The right place for
+traceable session-by-session history.
+
+**How it differs from `--notes`**: `--notes` is a single mutable field on
+the issue, designed for the current handoff snapshot. Each `br update
+--notes` overwrites the previous value. `br comments add` is append-only:
+every entry is preserved with a timestamp and (when attribution env vars
+are set) the agent identity.
+
+**When to reach for which**:
+
+| Use `--notes` | Use `br comments add` |
+|---|---|
+| Current state, handoff context | Session log, decisions made, what was tried |
+| Single source of truth for "where am I" | Append-only audit trail |
+| Frequently overwritten | Never overwritten |
+
+**Commands**:
+
+```bash
+br comments add br-42 "Tried approach X, hit limit Y. Switching to Z."
+br comments list br-42                # newest-first by default
+br comments list br-42 --format json  # machine-readable
+```
+
+Comments do **not** propagate through inheritance (`agent_context` does
+that) and do not affect the `--claim` workflow. They're a sidecar for
+traceability.
 
 ---
 

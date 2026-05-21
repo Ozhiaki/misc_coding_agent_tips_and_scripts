@@ -78,29 +78,23 @@ This sets `status=in_progress` AND `assignee=$BD_ACTOR` in one operation. It als
 
 The blocked-issue check also applies to `--status in_progress` without `--claim`.
 
-## Command Reminders
+## Commands Worth Knowing
 
-- Day-to-day: `br create`, `br show`, `br list`, `br ready`, `br update`,
-  `br close`, `br dep add`.
-- Bulk creation: `br create -f <markdown-file>` parses a structured markdown
-  file into many issues at once. See `BULK_IMPORT.md` in this folder for the
-  grammar.
-- Quick capture: `br q "title"` creates an issue and prints only its ID
-  (script-friendly).
-- Discovery: `br capabilities --format json` returns the runtime command
-  contract. Use it before any agent-driven workflow that calls unfamiliar
-  commands. `br capabilities --command create --format json` returns the
-  schema for one command. See `DISCOVERY.md`.
-- Agent help: `br agents --add --force` writes the canonical agent workflow
-  section into `AGENTS.md`. `br robot-docs guide` prints a short in-tool
-  handbook.
-- Claim work: `br update <id> --claim` (atomic status + assignee, validates
-  not-blocked and not-already-claimed).
-- Chained work: `br close <id> --suggest-next --json` returns newly unblocked
-  issues so the agent can pick the next one without re-querying.
-- Coordination: `br scheduler` (rank ready work with evidence),
-  `br coordination status` (read-only diagnosis of stale `in_progress`
-  claims).
+| Family | Commands | What they're for |
+|---|---|---|
+| Day-to-day | `br create`, `br show`, `br list`, `br ready`, `br update`, `br close`, `br dep add` | The minimum surface. |
+| Bulk creation | `br create -f <markdown-file>` | Parses a structured markdown file into many issues at once. See `BULK_IMPORT.md`. |
+| Quick capture | `br q "title"` | Creates an issue and prints only its ID (script-friendly). |
+| Claim work | `br update <id> --claim` | Atomic status + assignee, validates not-blocked and not-already-claimed. |
+| Chained work | `br close <id> --suggest-next --json` | Returns newly unblocked issues so the agent picks the next without re-querying. |
+| Discovery | `br capabilities [--command <name>] --format json`, `br robot-docs guide`, `br schema <target> --format json` | Runtime command contract, agent handbook, JSON schemas. See `DISCOVERY.md`. |
+| Agent help | `br agents --add --force` | Writes the canonical agent workflow section into `AGENTS.md`. |
+| Coordination | `br scheduler`, `br coordination status` | Rank ready work with evidence; read-only diagnosis of stale `in_progress` claims. |
+| Queries (saved) | `br query save <name> <expr>`, `br query run <name>`, `br query list`, `br query delete <name>` | Reusable named filters; `run` accepts override flags. |
+| Comments | `br comments add <id> <body>`, `br comments list <id>` | Append-only commentary on an issue — the place for traceable session-by-session history (distinct from `--notes`, which is a single mutable field). |
+| Doctor | `br doctor`, `br doctor diagnose`, `br doctor repair`, `br doctor ls`, `br doctor undo <run-id>`, `br doctor explain <finding-id>` | Diagnose and (with `--repair`/`repair`) fix workspace issues. Has its own exit-code dictionary — see SAFETY and the forthcoming ERRORS_AND_SCHEMAS doc. |
+| History | `br history list`, `br history diff <file>`, `br history restore <backup>`, `br history prune --keep N --older-than DAYS` | Manage `.beads/.br_history/` backups. |
+| Upgrade | `br self-update` *(feature-gated)* | Available only on binaries built with the `self_update` feature; check `br capabilities --format json \| jq '.features'`. |
 
 ## Output Formats
 
@@ -114,16 +108,43 @@ br supports four output formats:
 | (default) | Rich (TTY) or Plain (piped/`NO_COLOR`). Auto-detected. |
 
 Always use `--json` or `--robot` when parsing programmatically. Output mode
-can also be defaulted via env vars: `BR_OUTPUT_FORMAT` (highest precedence)
-or `TOON_DEFAULT_FORMAT` (fallback). Set `RUST_LOG=error` for routine agent
-runs to keep stderr clean.
+can also be defaulted via env vars: `BR_OUTPUT_FORMAT` wins over
+`TOON_DEFAULT_FORMAT` (fallback) when both are set. Set `RUST_LOG=error` for
+routine agent runs to keep stderr clean.
 
-### MCP server mode
+### Other environment variables
 
-`br serve` exposes the same workspace as an MCP server over stdio, available
-only in binaries built with the `mcp` feature. Use this when an MCP-native
-agent benefits from tool/resource discovery; use `br --json` when a shell
-pipeline is simpler. See `docs/CLI_REFERENCE.md#serve` upstream.
+| Variable | Effect |
+|---|---|
+| `BR_AGENT_NAME` | Attribution: tags mutations with the agent identity. |
+| `BR_HARNESS` | Attribution: tags the harness/runner (e.g., `claude-code`). |
+| `BR_MODEL` | Attribution: tags the model (e.g., `claude-opus-4-7`). |
+| `BR_INHERITED_CONTEXT` | Set to `1` to enable inherited-context emission for this run (wins over config). |
+| `BR_DOCTOR_RUNS_DIR` | Override the directory `br doctor` writes runs to. |
+
+The three attribution vars feed `br audit log <id>` and are surfaced as
+capture-only metadata — they never reject a command. CLI flag `--actor`
+wins over env vars.
+
+### Global flags worth knowing
+
+A handful of flags work on every `br` command:
+
+| Flag | Use |
+|---|---|
+| `--actor <name>` | Override attribution for this invocation. Precedence: `--actor` > `BR_AGENT_NAME` env > absent. Surfaced in `br audit log`. |
+| `--lock-timeout <ms>` | How long to wait for a DB lock before failing. Useful in concurrent agent setups. |
+| `--no-db` | Run against JSONL only, no SQLite read/write. For inspection in environments where the DB is unavailable or stale. |
+
+### MCP server mode (optional)
+
+`br serve` exposes the same workspace as an MCP server over stdio. **MCP is
+not built into stock `br` binaries** — it's a Cargo feature (`--features mcp`)
+and is opt-in. For the common CLI/JSON pipeline path you don't need it; check
+`br capabilities --format json | jq '.features'` to see whether your binary
+includes it. Use MCP mode when an MCP-native agent benefits from tool/resource
+discovery; use `br --json` when a shell pipeline is simpler. See
+`docs/CLI_REFERENCE.md#serve` upstream.
 
 ## Documents
 

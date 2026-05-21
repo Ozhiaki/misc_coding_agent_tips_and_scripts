@@ -125,3 +125,40 @@ After wiring in all four layers, test with a fresh agent session:
 4. Does `br lint --status=open` pass after the agent creates issues? (Layer 3 working)
 
 If Layer 2 fails, the usual cause is the rules file not being in the right location for your agent tool.
+
+## Cross-Workspace Routing
+
+When an agent works across multiple `br` workspaces (different repos, sub-
+projects, or per-team workspaces), `.beads/routes.jsonl` configures which
+workspace handles which prefix. This is a routing manifest, not automatic
+multi-repo sync — each workspace remains independent. `br` reads the
+manifest to resolve cross-workspace IDs in dependency edges and command
+output; it does **not** open or mutate other workspaces' databases.
+
+```jsonl
+{"prefix": "auth", "path": "/Users/dave/p/auth-service"}
+{"prefix": "pay",  "path": "/Users/dave/p/payment-service"}
+```
+
+When an issue in this workspace declares an `external:br:auth/auth-42`
+dependency, the routing manifest tells `br dep tree` and `br show` where
+to point the human. Resolving the dependency for the agent still requires
+`cd` to the other workspace; the manifest is purely a lookup table.
+
+## Attribution via `--actor`
+
+`br` accepts an `--actor <name>` global flag that overrides agent identity
+for a single invocation. Precedence: `--actor` > `BR_AGENT_NAME` env >
+absent. The actor is captured in `br audit log <id>` so multi-agent and
+human-plus-agent workflows have a queryable trail of who did what.
+
+```bash
+br update br-42 --actor alice --claim          # attributed to alice
+br audit log br-42                              # see the trail
+br audit log br-42 --format json                # machine-readable
+```
+
+This is a **capture-only** facility — attribution never causes a command
+to fail. Closure-time policy gates (`.beads/policy.yaml`) can additionally
+*require* certain attribution fields; see the forthcoming
+`AGENT_COORDINATION.md`.
