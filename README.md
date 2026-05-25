@@ -39,19 +39,9 @@ Operational guidance for `br` (beads_rust). Covers issue design, field semantics
 
 Copyable skill files for Claude, Codex, and other agents. Drop a skill into your agent's skill directory and it becomes available as a slash command.
 
-#### [br-issue-tracking](agent-scripts/br-issue-tracking/)
-
-Agent skill for tracking multi-session work with `br` (beads_rust). Covers session startup, claiming and closing issues, keeping resumable notes, syncing JSONL/DB, configuring prefixes, migrating from `bd`, and troubleshooting.
-
-| Document | Purpose |
-|----------|---------|
-| [SKILL.md](agent-scripts/br-issue-tracking/SKILL.md) | Full skill: session workflow, core commands, sync protocol, config, migration, troubleshooting |
-
-Key concepts: explicit sync (never automatic git), `--claim` for atomic assignment, resumable notes structure (COMPLETED / IN_PROGRESS / NEXT / BLOCKERS), safety guards against data loss, quality enforcement (field separation, self-contained issues, traceable close reasons, `br lint` validation).
-
 #### [plan-to-beads](agent-scripts/plan-to-beads/)
 
-Agent skill for the distillation step: translating a planning document (markdown spec, design doc, requirements list) into well-structured `br` issues — epics, hierarchical children, dependencies, and properly-separated fields. Counterpart to `br-issue-tracking` (which handles the execution phase); this skill covers issue construction only.
+Agent skill for the distillation step: translating a planning document (markdown spec, design doc, requirements list) into well-structured `br` issues — epics, hierarchical children, dependencies, and properly-separated fields. Counterpart to `beads-to-done` (which handles the execution phase); this skill covers issue construction only.
 
 | Document | Purpose |
 |----------|---------|
@@ -62,6 +52,21 @@ Agent skill for the distillation step: translating a planning document (markdown
 | [agent-context.md](agent-scripts/plan-to-beads/agent-context.md) | Embedding governing instructions on epics so they surface when descendants are claimed |
 
 Key concepts: the four-field content model (description=why, design=how, acceptance=done-when, notes=progress), self-contained issues (no cross-references to plan docs), epic decomposition with hierarchical child IDs, bulk markdown import for >5 related issues, governing context on epics that survives compaction.
+
+#### [beads-to-done](agent-scripts/beads-to-done/)
+
+Agent skill for the execution phase: carrying an existing `br` issue from claim to close. Counterpart to `plan-to-beads` (which constructs issues); this skill covers everything that happens after issues already exist — claiming, working, recording progress, handling mid-work surprises, closing cleanly, and recovering from sync trouble. Solo-agent and cross-session-by-same-agent only; multi-agent / swarm features are explicitly out of scope.
+
+| Document | Purpose |
+|----------|---------|
+| [SKILL.md](agent-scripts/beads-to-done/SKILL.md) | Trigger, dispatch, the five-phase execution loop at a glance, cross-refs to `plan-to-beads` |
+| [claim-and-work.md](agent-scripts/beads-to-done/claim-and-work.md) | Session start, finding ready work, `--claim` mechanics, retrieving the epic's `agent_context`, read-before-claim sanity check |
+| [notes-discipline.md](agent-scripts/beads-to-done/notes-discipline.md) | `--notes` overwrite footgun, read-before-write pattern, `--notes` vs `br comments add`, structuring a resumable progress snapshot |
+| [discovery.md](agent-scripts/beads-to-done/discovery.md) | Three branches for mid-work surprises: spawn a new bead, fix the current bead, or stop and ask. Wiring `discovered-from` dependencies |
+| [closing-and-sync.md](agent-scripts/beads-to-done/closing-and-sync.md) | Acceptance walkthrough, traceable close reasons, `--suggest-next`, the JSONL/DB sync model, the git half of the close |
+| [recovery.md](agent-scripts/beads-to-done/recovery.md) | `sync --status` decision tree, three-way merge, JSONL conflict markers, same-agent stuck claims, `br doctor`, exit-code gotchas |
+
+Key concepts: the JSONL is the audit trail / the DB is the working copy, `--notes` overwrites (read-before-write), the three discovery branches (new bead / current bead wrong / stop and ask), `discovered-from` dependencies for traceability, traceable close reasons (what changed + commit ref), work is not done until `git push` succeeds.
 
 #### [Plan-Pact](agent-scripts/plan-pact/)
 
@@ -102,11 +107,11 @@ https://raw.githubusercontent.com/Ozhiaki/misc_coding_agent_tips_and_scripts/mai
 **Agent skills** — copy into your agent's skill directory:
 
 ```bash
-# br-issue-tracking (for Claude)
-cp -r agent-scripts/br-issue-tracking/ .claude/skills/br-issue-tracking/
-
 # plan-to-beads (for Claude)
 cp -r agent-scripts/plan-to-beads/ .claude/skills/plan-to-beads/
+
+# beads-to-done (for Claude)
+cp -r agent-scripts/beads-to-done/ .claude/skills/beads-to-done/
 
 # plan-pact (for Claude)
 cp -r agent-scripts/plan-pact/ .claude/skills/plan-pact/
