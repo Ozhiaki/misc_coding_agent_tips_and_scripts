@@ -49,6 +49,20 @@ Agent skill for tracking multi-session work with `br` (beads_rust). Covers sessi
 
 Key concepts: explicit sync (never automatic git), `--claim` for atomic assignment, resumable notes structure (COMPLETED / IN_PROGRESS / NEXT / BLOCKERS), safety guards against data loss, quality enforcement (field separation, self-contained issues, traceable close reasons, `br lint` validation).
 
+#### [plan-to-beads](agent-scripts/plan-to-beads/)
+
+Agent skill for the distillation step: translating a planning document (markdown spec, design doc, requirements list) into well-structured `br` issues — epics, hierarchical children, dependencies, and properly-separated fields. Counterpart to `br-issue-tracking` (which handles the execution phase); this skill covers issue construction only.
+
+| Document | Purpose |
+|----------|---------|
+| [SKILL.md](agent-scripts/plan-to-beads/SKILL.md) | Trigger, dispatch, four-field content model summary |
+| [field-semantics.md](agent-scripts/plan-to-beads/field-semantics.md) | Each field in depth: description/design/acceptance/notes, examples, anti-patterns, notes-vs-comments |
+| [structure.md](agent-scripts/plan-to-beads/structure.md) | Epic decomposition, `--parent` hierarchical IDs, `--deps` types, `--slug` mechanics, external references |
+| [bulk-import.md](agent-scripts/plan-to-beads/bulk-import.md) | `br create -f` markdown grammar: H2/H3 structure, intra-file references, dependency syntax |
+| [agent-context.md](agent-scripts/plan-to-beads/agent-context.md) | Embedding governing instructions on epics so they surface when descendants are claimed |
+
+Key concepts: the four-field content model (description=why, design=how, acceptance=done-when, notes=progress), self-contained issues (no cross-references to plan docs), epic decomposition with hierarchical child IDs, bulk markdown import for >5 related issues, governing context on epics that survives compaction.
+
 #### [Plan-Pact](agent-scripts/plan-pact/)
 
 Cross-agent negotiation protocol for planning documents. Gives multiple reasoning agents (human or software) a shared format for proposing, reviewing, disputing, and closing plans without drift or rewrite loops.
@@ -82,7 +96,7 @@ Key concepts: keep the useful point intact, frame around practical benefit, avoi
 ## Issue Tracking
 
 This project uses beads_rust (`br`). Follow the guidance at:
-https://raw.githubusercontent.com/TheEditor/misc_coding_agent_tips_and_scripts/main/agent-operational-guides/beads-rust/README.md
+https://raw.githubusercontent.com/Ozhiaki/misc_coding_agent_tips_and_scripts/main/agent-operational-guides/beads-rust/README.md
 ```
 
 **Agent skills** — copy into your agent's skill directory:
@@ -90,6 +104,9 @@ https://raw.githubusercontent.com/TheEditor/misc_coding_agent_tips_and_scripts/m
 ```bash
 # br-issue-tracking (for Claude)
 cp -r agent-scripts/br-issue-tracking/ .claude/skills/br-issue-tracking/
+
+# plan-to-beads (for Claude)
+cp -r agent-scripts/plan-to-beads/ .claude/skills/plan-to-beads/
 
 # plan-pact (for Claude)
 cp -r agent-scripts/plan-pact/ .claude/skills/plan-pact/
