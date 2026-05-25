@@ -14,6 +14,15 @@
 
 **On atomicity**: `br create -f` is not transactional. It can create issues *and* emit warnings about dependency problems in the same run. Inspect the `--json` output before assuming the import landed cleanly. Do not assume all-or-nothing semantics.
 
+**Validation tier**: For simple imports, run `br create --file --json` and inspect the output. For large or dependency-heavy imports, or when validating unfamiliar `br` behavior, test once in a temporary Beads repo before running it against the real workspace:
+
+```bash
+TMPDIR=$(mktemp -d) && cd "$TMPDIR" && br init --quiet
+br create --file /path/to/import.md --json
+```
+
+Rough triggers for the temp-repo path: 20+ issues in one import; heavy use of symbolic `### ID` / `### Parent` / blocking dependencies; the `.beads/` directory is shared or about to be committed; or you're unsure whether installed `br` behavior matches this skill's docs.
+
 The grammar exists *so that field separation is preserved* in batch creation, not as an excuse to collapse fields together. Each issue's `### Description`, `### Design`, and `### Acceptance` sections should still separate why/how/done-when — see [field-semantics.md](field-semantics.md).
 
 ## File requirements
