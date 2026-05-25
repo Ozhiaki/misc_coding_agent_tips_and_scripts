@@ -30,6 +30,8 @@ If you don't set it during distillation, you might never set it at all — and t
 
 If live behavior changes and bulk import gains an `### Agent Context` section, prefer that. Confirm with `br create --help` or `br capabilities --command create --format json` before relying on it.
 
+**Current limitation**: bulk import can express issue fields, hierarchy, and dependencies, but not `agent_context`. If governing context matters, the distillation is not complete after `br create --file` — run a follow-up `br update <epic-id> --agent-context ...` on the relevant epic(s) before considering the plan-to-Beads pass done.
+
 ## Defaults: off
 
 Inheritance is **opt-in per project**. A fresh workspace stores `agent_context` if you set it but emits nothing on descendant operations until you turn the feature on.
