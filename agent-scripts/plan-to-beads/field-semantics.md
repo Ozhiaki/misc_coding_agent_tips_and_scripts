@@ -15,8 +15,9 @@ Detailed reference for each field involved in plan-to-Beads translation. The fou
 | **parent** | `--parent <ID>` | `--parent <ID>` | Epic membership | When restructured |
 | **labels** | `-l` | `--add-label`/`--remove-label`/`--set-labels` | Categorization | Yes |
 | **deps** | `--deps "type:id,..."` | `br dep add` | Blocking/related/discovered-from | When discovered |
+| **agent_context** | not at create | `--agent-context` | Governing constraints on epics (inherited by descendants) | Yes |
 
-Note: `br create` (single-issue mode) does **not** accept `--design`, `--acceptance-criteria`, or `--notes`. Either use `br update` after creation, or use bulk markdown import (`br create -f file.md`) which accepts `### Design` and `### Acceptance` sections inline. See [bulk-import.md](bulk-import.md).
+Note: `br create` (single-issue mode) does **not** accept `--design`, `--acceptance-criteria`, `--notes`, or `--agent-context`. Either use `br update` after creation, or use bulk markdown import (`br create -f file.md`) which accepts `### Design` and `### Acceptance` sections inline. `### Agent Context` is **not** parsed by bulk import — set `agent_context` via a follow-up `br update`. See [bulk-import.md](bulk-import.md) and [agent-context.md](agent-context.md).
 
 ## Why field separation matters
 

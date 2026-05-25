@@ -20,6 +20,16 @@ The fix: an `agent_context` field on each issue, plus optional inheritance that 
 
 If you don't set it during distillation, you might never set it at all — and the constraints from the plan doc get lost.
 
+## How to set it: `br update`, not bulk grammar
+
+`agent_context` is set via `br update --agent-context` after the epic exists. The bulk-import markdown grammar (`br create -f`) does **not** currently parse an `### Agent Context` H3 section — such a section would be silently ignored as an unknown H3. The standard pattern when distilling:
+
+1. Create the epic (and its children) via bulk import.
+2. Capture the epic's ID from the `--json` output (or look it up by title).
+3. Run `br update <epic-id> --agent-context '<content>'`.
+
+If live behavior changes and bulk import gains an `### Agent Context` section, prefer that. Confirm with `br create --help` or `br capabilities --command create --format json` before relying on it.
+
 ## Defaults: off
 
 Inheritance is **opt-in per project**. A fresh workspace stores `agent_context` if you set it but emits nothing on descendant operations until you turn the feature on.

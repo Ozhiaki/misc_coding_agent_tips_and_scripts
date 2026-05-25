@@ -56,7 +56,7 @@ The decision hinges on **how many related issues you're creating** and **whether
 **Use `br create -f <markdown-file>`** when:
 - Creating more than ~5 related issues at once.
 - Distilling a planning document into an epic + decomposed tasks.
-- Issues reference each other (parent links, dependencies) — intra-file references resolve symbolically, no shell-variable juggling.
+- Issues reference each other (parent links, dependencies) — intra-file references resolve symbolically (by H2 title or stand-in `### ID`), no shell-variable juggling. This is the preferred path; do not fall back to capturing IDs from `--json` and running `br dep add` post-hoc unless the bulk grammar genuinely can't express the relationship.
 - You want a reviewable markdown artifact before any issues are actually created.
 
 **Use individual `br create` calls** when:
@@ -65,6 +65,10 @@ The decision hinges on **how many related issues you're creating** and **whether
 - The script needs to react to creation output (e.g., capturing the new ID into a shell variable for follow-on commands).
 
 Bulk import preserves field separation at creation time — `### Description`, `### Design`, `### Acceptance` parse to the right fields directly, avoiding the create-then-update-then-update cycle. See [bulk-import.md](bulk-import.md) for the full grammar.
+
+`br create -f` is **not transactional** — it can create issues *and* emit warnings about dependency problems in the same run. Inspect the `--json` output before assuming the import landed cleanly.
+
+Note on `br lint`: it is **not** a generic validator for plan-to-Beads imports. Some `br lint` rule sets check for project-specific headings inside `description` (e.g., `## Acceptance Criteria`), which conflicts with this skill's recommendation to use the separated `acceptance_criteria` field. Run `br lint` only if you've confirmed the project's lint rules align with separated fields.
 
 ## Epic and dependency structure
 

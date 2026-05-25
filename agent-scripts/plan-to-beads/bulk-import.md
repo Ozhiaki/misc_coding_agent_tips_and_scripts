@@ -9,8 +9,10 @@
 | Each call creates one issue | Single call creates all issues |
 | Intra-issue refs need shell variable juggling (capture ID, feed it to next call) | Intra-file refs resolve symbolically (by title or stand-in ID) |
 | `--design` / `--acceptance-criteria` require follow-up `br update` calls | All fields settable inline via `### Design`, `### Acceptance` H3 sections |
-| Partial failure = inconsistent state across many commands | One atomic operation; partial-failure stories are simpler |
+| Partial failure = inconsistent state across many commands | Single command, single decision point; orchestration is simpler |
 | Hard to review before running | The markdown file itself is the reviewable artifact |
+
+**On atomicity**: `br create -f` is not transactional. It can create issues *and* emit warnings about dependency problems in the same run. Inspect the `--json` output before assuming the import landed cleanly. Do not assume all-or-nothing semantics.
 
 The grammar exists *so that field separation is preserved* in batch creation, not as an excuse to collapse fields together. Each issue's `### Description`, `### Design`, and `### Acceptance` sections should still separate why/how/done-when — see [field-semantics.md](field-semantics.md).
 
@@ -58,7 +60,20 @@ Unknown H3 sections are silently ignored. Section names are case-insensitive (`#
 
 Bulleted lines (`-`, `*`, `+`, with or without `[ ]` / `[x]` checkboxes) are treated as **single** dependency references — this is what enables title-based deps with spaces. Non-bulleted lines split on commas or whitespace.
 
-## Intra-file references
+## Intra-file references — the preferred path for hierarchy and deps
+
+When issues in a single import reference each other (parent links, blocks edges), **use the intra-file reference forms below** rather than the post-create pattern of capturing IDs from `--json` output and running `br dep add` afterward. The bulk grammar exists precisely so the import file itself is the source of truth for hierarchy and dependencies — reviewable in one place, no ID-capture juggling.
+
+If you find yourself writing:
+
+```bash
+br create -f import.md --json > created.json
+A=$(jq -r '.[] | select(.title == "...") | .id' created.json)
+B=$(jq -r '.[] | select(.title == "...") | .id' created.json)
+br dep add "$A" "$B" --type blocks
+```
+
+...you've split the hierarchy/dep specification away from the import file. Push it back into `### Parent` and `### Dependencies` sections instead.
 
 Two ways to reference issues defined in the same import file:
 
@@ -193,6 +208,17 @@ All three issues created. The two tasks are linked to the epic via `### Parent` 
 - Each issue needs different command-line treatment (e.g., one needs a slug, others don't).
 - The script needs to react to creation output for follow-on commands.
 
+## Verifying live behavior
+
+Skill docs and installed `br` behavior can drift. Before relying on advanced bulk-import features, check what the local binary actually does:
+
+```bash
+br create --help
+br capabilities --command create --format json
+```
+
+If `br capabilities` is unavailable on the installed version, fall back to `br create --help`, or sanity-check a small import against `--json` output and confirm fields landed where expected.
+
 ## Source of truth
 
-The grammar is implemented in `src/util/markdown_import.rs` in the `beads_rust` repo. If live behavior diverges from this document, the parser source wins. Run `br capabilities --command create --format json` to see the current `--file` flag documentation directly.
+The grammar is implemented in `src/util/markdown_import.rs` in the `beads_rust` repo. If live behavior diverges from this document, the parser source wins.
