@@ -23,6 +23,8 @@ br create --file /path/to/import.md --json
 
 Rough triggers for the temp-repo path: 20+ issues in one import; heavy use of symbolic `### ID` / `### Parent` / blocking dependencies; the `.beads/` directory is shared or about to be committed; or you're unsure whether installed `br` behavior matches this skill's docs.
 
+**Before bulk-creating**: confirm `issue_prefix` matches the project (`br config get issue_prefix --json`; set with `br config set issue_prefix=<name>` if wrong — prefix changes only affect *new* issues). Never edit `.beads/issues.jsonl` by hand; all mutations go through `br` so the DB and JSONL stay in sync.
+
 The grammar exists *so that field separation is preserved* in batch creation, not as an excuse to collapse fields together. Each issue's `### Description`, `### Design`, and `### Acceptance` sections should still separate why/how/done-when — see [field-semantics.md](field-semantics.md).
 
 ## File requirements
