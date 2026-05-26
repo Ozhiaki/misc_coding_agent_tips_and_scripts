@@ -60,6 +60,83 @@ git push
 
 Five phases, in order. Skipping any of them tends to surface as a problem one session later, when a future agent (or future-you) can't tell what happened.
 
+## Session mode: single-issue vs queue
+
+The loop above closes one issue. Before starting, decide whether the user wants you to **stop after this one** or **keep going until the queue is empty (or some scope is exhausted)**. Getting this wrong is the most common way to under- or over-deliver.
+
+### Single-issue mode (default)
+
+The user named a specific issue or a small, finite set. Work the loop once per issue, then stop and report back. Typical signals:
+
+- "Work `br-42`."
+- "Finish the auth refactor bead."
+- "Close out the issue I claimed yesterday."
+
+Run the loop, close, report. Don't reach for `br ready` after closing.
+
+### Queue mode
+
+The user wants the queue drained (possibly within a scope). Typical signals:
+
+- "Work through the auth epic."
+- "Drain the queue."
+- "Keep going until ready is empty."
+- "Finish everything that's ready."
+- "Get as far as you can this session."
+
+In queue mode, after every close:
+
+```bash
+br ready --json
+```
+
+If non-empty:
+
+- **Prefer newly-unblocked siblings under the same epic** before picking unrelated work. Closing a leaf often makes its parent epic closeable (see "Epic close-out" in [closing-and-sync.md](closing-and-sync.md)) or unblocks sibling leaves; finishing the epic before context-switching is usually higher-value than starting a new branch.
+- Pick the top item per the normal `br ready` priority sort.
+- Run the loop again.
+
+If empty:
+
+- Apply the **queue-empty definition of done** below.
+
+### When the scope is in between
+
+Often the user names a scope that's bigger than one issue but smaller than the whole queue — "the auth epic," "all the P0s," "the things blocking the release." Treat it as queue mode bounded by the scope:
+
+- After each close, check `br ready` *filtered by the scope* (`--priority 0`, an epic's children via `br list --parent <epic-id> --status ready`, etc.).
+- Stop when *the scoped subset* is empty, not when the whole queue is.
+
+Report what's left outside the scope at the end so the user can decide what's next.
+
+### Queue-empty definition of done
+
+When operating in queue mode and `br ready` (or its scoped subset) returns empty, verify the workspace is actually clean before reporting "done":
+
+```bash
+br status                          # 0 open/in_progress/blocked/ready in scope
+br sync --status                   # "in sync"
+git status --short --branch        # clean working tree, branch up to date
+git log -3 --oneline | cat         # confirm the latest closes are pushed
+```
+
+The four signals together mean: nothing left to do in scope, JSONL and DB agree, working tree is clean, and the work is shipped. Report this state to the user explicitly — don't just say "done." A useful pattern:
+
+> Queue drained. 7 issues closed (`br-42`..`br-48`), 3 epics closed (`auth-1`, `auth-2`, `auth`). `br ready` empty in scope. Sync clean, branch pushed to origin/main.
+
+If any of the four signals is off, fix it before reporting done. A queue that's "empty" but with an unpushed commit isn't actually done.
+
+### When to bail out of queue mode early
+
+Queue mode does not mean "work until you crash." Stop and surface to the user when:
+
+- A [discovery branch 3](discovery.md) hit ("stop and ask").
+- A blocker filed during work blocks the rest of the scoped queue.
+- Context is heavy enough that the next close risks losing notes — finish the current issue's notes/close honestly, then report and let the user start a fresh session.
+- An unfamiliar safety guard fires during sync. Don't `--force` through it in batch mode; surface to the user.
+
+In each case, leave the workspace in a clean, resumable state (notes current on whatever's `in_progress`, no half-finished mutations) before reporting.
+
 ## Dispatch: which detail file applies
 
 This `SKILL.md` is the loop at a glance. Detail lives in five supporting files:
@@ -69,7 +146,7 @@ This `SKILL.md` is the loop at a glance. Detail lives in five supporting files:
 | Starting a session, picking ready work, claiming an issue, retrieving an epic's `agent_context`, sanity-checking an issue before starting | [claim-and-work.md](claim-and-work.md) |
 | Updating `notes`, deciding between `--notes` and `br comments add`, structuring a resumable progress snapshot | [notes-discipline.md](notes-discipline.md) |
 | Encountering an unexpected behavior, a missing prerequisite, scope creep, or a wrong-issue situation mid-work — deciding whether to spawn a new bead, update the current one, or stop | [discovery.md](discovery.md) |
-| Closing an issue, writing a traceable `--reason`, syncing JSONL/DB, the git half of the close | [closing-and-sync.md](closing-and-sync.md) |
+| Closing an issue (incl. epic close-out and the commit-ordering convention), writing a traceable `--reason`, syncing JSONL/DB, the git half of the close | [closing-and-sync.md](closing-and-sync.md) |
 | JSONL/DB divergence, conflict markers in JSONL, a stuck `in_progress` claim from a crashed session, `br doctor` | [recovery.md](recovery.md) |
 
 ## Cross-references to `plan-to-beads`
@@ -97,18 +174,20 @@ These bite agents who don't know about them. Each is covered in detail in the fi
 
 ## Quick checklist for any execution session
 
-1. **Did you `sync --status` at the top?** Cheap, prevents stale-DB surprises.
-2. **Did you check `list --status in_progress` before claiming new work?** A stuck claim from a previous session is the first thing to handle.
-3. **Did you read `br show <id>` *and* the epic's `agent_context` (if any) before starting?** Mid-work surprises are usually constraints that were on the parent epic.
-4. **Are you updating `notes` at milestones, not just at the end?** Context compaction is not negotiable; the only record of what happened is what you wrote.
-5. **When the work surprised you, did you correctly route the surprise** — update the current issue, spawn a new one, or stop and ask? See [discovery.md](discovery.md).
-6. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
-7. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
+1. **Did you confirm session mode** — single-issue or queue? See "Session mode" above.
+2. **Did you `sync --status` at the top?** Cheap, prevents stale-DB surprises.
+3. **Did you check `list --status in_progress` before claiming new work?** A stuck claim from a previous session is the first thing to handle.
+4. **Did you read `br show <id>` *and* the epic's `agent_context` (if any) before starting?** Mid-work surprises are usually constraints that were on the parent epic.
+5. **Are you updating `notes` at milestones, not just at the end?** Context compaction is not negotiable; the only record of what happened is what you wrote.
+6. **When the work surprised you, did you correctly route the surprise** — update the current issue, spawn a new one, or stop and ask? See [discovery.md](discovery.md).
+7. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
+8. **In queue mode, did you re-check `br ready` after every close** and apply the queue-empty definition of done before reporting?
+9. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
 
 ## Supporting files
 
 - **[claim-and-work.md](claim-and-work.md)** — Session start, finding ready work, the `--claim` mechanics, status transitions, retrieving an epic's `agent_context`, the read-before-claim check that catches a wrong issue before you start.
 - **[notes-discipline.md](notes-discipline.md)** — `--notes` overwrite semantics, read-before-write pattern, `--notes` vs `br comments add`, structuring a resumable progress snapshot.
 - **[discovery.md](discovery.md)** — Heuristics and worked examples for the three discovery branches: new bead needed, current bead is wrong, scope creep. Wiring `discovered-from` dependencies. When to stop and ask the user.
-- **[closing-and-sync.md](closing-and-sync.md)** — Acceptance walkthrough, traceable close reasons, `--suggest-next`, the JSONL/DB model, sync commands, the git half of the close.
+- **[closing-and-sync.md](closing-and-sync.md)** — Acceptance walkthrough, notes cleanup, traceable close reasons, the implementation-commit / close / tracker-commit ordering, epic close-out (no-code closes), `--suggest-next`, the JSONL/DB model, sync commands.
 - **[recovery.md](recovery.md)** — `sync --status` decision tree, three-way merge, force modes, JSONL conflict markers, history restore, `br doctor`, and the same-agent stuck-claim case.
