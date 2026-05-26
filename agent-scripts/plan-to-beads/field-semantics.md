@@ -184,6 +184,18 @@ In bulk markdown import, the section can be written as either `### Acceptance` o
 - Existing secrets without Sensitive field default to true on load
 ```
 
+### Input-grammar requirements for CLI/API/config issues
+
+When an issue adds or changes a user-facing input surface — a CLI flag, an HTTP param, a config key, an env var, a schema field — name the input-grammar requirements that are part of the spec directly in the acceptance criteria. Examples:
+
+- "Supports multiple `--review-state` inputs (repeated flag)."
+- "Rejects unknown review states with an error that names the bad value and lists the valid set."
+- "Flag overrides env var; env var overrides config; config overrides default."
+- "Existing files require `--overwrite` to be replaced; otherwise the command exits with a non-zero status."
+- "JSON output on stdout remains parseable when `--verbose` is also set (diagnostics go to stderr)."
+
+Don't try to enumerate every grammar dimension the implementer might introduce — that's not the planner's job, and stuffing the issue full of speculative parser concerns makes it brittle. Spec only what's part of the *requested behavior*. The implementer is responsible for testing the grammar shape they actually choose; see `beads-to-done/input-surface-testing.md` for the implementation-time side of this division of labor.
+
 If you can't write clear acceptance criteria, you don't understand the problem yet. Investigate more, or note open questions in `design`/`notes` for follow-up.
 
 ---
