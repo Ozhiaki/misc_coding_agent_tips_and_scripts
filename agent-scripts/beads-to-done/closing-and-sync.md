@@ -37,6 +37,8 @@ Read the `acceptance_criteria` field specifically. For each criterion, satisfy y
 - **The criterion is verifiable but unmet** → there's more work to do; don't close yet.
 - **The criterion describes a behavior you didn't implement because of a mid-work pivot** → either the pivot was wrong (go back), or the criterion is now wrong (update it before closing, with `br comments add` recording why).
 
+**Input-surface check.** If this issue added or changed a CLI flag, HTTP param, schema field, config key, env var, or any other user-facing input surface, the acceptance verification has an extra question: *did the tests cover the input grammar introduced by this issue, not just the happy-path behavior behind it?* A passing test of the business function doesn't prove the parser/validator works. See [input-surface-testing.md](input-surface-testing.md) for the checklist. If grammar tests are missing, write them before closing.
+
 The temptation to close with a criterion still unmet, especially on solo work where "nobody will check," is real. Resist. The acceptance criteria are the contract you wrote with future-you; if you erode it, future-you stops trusting it.
 
 If acceptance criteria are missing entirely on an issue you're about to close, you've got an under-specified issue. Two options:
@@ -378,6 +380,7 @@ The model is dual-edge sword: it lets multiple developers/agents commit issue mu
 | Closed without verifying acceptance | Future audit finds work was closed but not actually done; trust in the tracker erodes. |
 | Closed with stale `IN_PROGRESS` / `NEXT` in notes | Closed issue's notes contradict its status; future search for in-flight work surfaces noise. |
 | Closed before the implementation commit | `--reason` has no real SHA to cite; "see latest commit" doesn't survive months. |
+| Closed without input-grammar tests for a new flag/param/key | Parser bug ships invisibly because tests bypass the parser. |
 | Mixed implementation and tracker in one commit | Reverts entangle tracker history; diffs harder to read; bisect surfaces unrelated state. |
 | Vague `--reason` ("Done", "Fixed") | Future agent has no breadcrumb to the code; has to dig through git log. |
 | Closed but didn't `git push` | Issue closed locally, still open everywhere else; team works on already-done items. |
@@ -392,7 +395,7 @@ The fix in every case is the six-step sequence (plus epic close-out when appropr
 
 For every close:
 
-1. **`br show <id>`** — read the acceptance criteria, confirm each is met.
+1. **`br show <id>`** — read the acceptance criteria, confirm each is met. If the issue changed an input surface, confirm grammar tests exist (see [input-surface-testing.md](input-surface-testing.md)).
 2. **Clean up notes** — strip `IN_PROGRESS` / `NEXT` / `BLOCKERS` lines that no longer apply.
 3. **Implementation commit first** — `git add <implementation>` (NOT `.beads/`), `git commit`, capture the SHA.
 4. **`br close <id> --reason "..." --suggest-next --json`** — reason includes *what* and the SHA from step 3.

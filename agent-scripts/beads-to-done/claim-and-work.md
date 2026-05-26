@@ -83,6 +83,8 @@ Scan for these four things in order:
 
 If any of those four turn up surprises, jump to [discovery.md](discovery.md) **before** claiming. Claiming first and then renegotiating is awkward — the audit trail will show the issue was claimed by you, then immediately mutated to say "actually this is wrong." Cleaner to catch it pre-claim.
 
+**One more flag to notice at read time:** if the issue's description or acceptance hints at a new or changed user-facing input surface — a new CLI flag, an HTTP param, a config key, an env var, a schema field — keep [input-surface-testing.md](input-surface-testing.md) in mind. You won't fully know the grammar until you've picked the implementation shape, but noticing the input-surface nature now means you'll remember to write the grammar tests when you get there, not after the close has already missed them.
+
 ## Retrieving the epic's `agent_context`
 
 When the issue you're about to claim is a child of an epic, the epic may carry `agent_context` — governing constraints (preferred approaches, forbidden patterns, review requirements) that apply to everything underneath it. These constraints are the ones most likely to bite mid-work if you miss them up front.
@@ -239,7 +241,8 @@ Before you write a single line of code:
 1. **Ran `br sync --status` and `--import-only` if needed.**
 2. **Checked `br list --status in_progress` for inherited claims.**
 3. **Read `br show <id>` — description, acceptance, design, notes.**
-4. **Walked the parent chain to find any `agent_context` on the epic** (since inheritance may not be enabled).
-5. **Confirmed the issue is still the right shape** — if not, jumped to [discovery.md](discovery.md) before claiming.
-6. **Claimed atomically with `br update <id> --claim`** (or resumed an existing claim of yours).
-7. **Set `--actor` or `BR_AGENT_NAME`** if the default isn't what you want in the audit log.
+4. **Noticed whether the issue changes a user-facing input surface** (flag, param, key, schema). If so, [input-surface-testing.md](input-surface-testing.md) applies at implementation and close.
+5. **Walked the parent chain to find any `agent_context` on the epic** (since inheritance may not be enabled).
+6. **Confirmed the issue is still the right shape** — if not, jumped to [discovery.md](discovery.md) before claiming.
+7. **Claimed atomically with `br update <id> --claim`** (or resumed an existing claim of yours).
+8. **Set `--actor` or `BR_AGENT_NAME`** if the default isn't what you want in the audit log.

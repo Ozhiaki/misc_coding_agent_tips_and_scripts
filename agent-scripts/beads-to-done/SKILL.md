@@ -139,13 +139,14 @@ In each case, leave the workspace in a clean, resumable state (notes current on 
 
 ## Dispatch: which detail file applies
 
-This `SKILL.md` is the loop at a glance. Detail lives in five supporting files:
+This `SKILL.md` is the loop at a glance. Detail lives in six supporting files:
 
 | If you're… | Read |
 |---|---|
 | Starting a session, picking ready work, claiming an issue, retrieving an epic's `agent_context`, sanity-checking an issue before starting | [claim-and-work.md](claim-and-work.md) |
 | Updating `notes`, deciding between `--notes` and `br comments add`, structuring a resumable progress snapshot | [notes-discipline.md](notes-discipline.md) |
 | Encountering an unexpected behavior, a missing prerequisite, scope creep, or a wrong-issue situation mid-work — deciding whether to spawn a new bead, update the current one, or stop | [discovery.md](discovery.md) |
+| Adding or changing a user-facing input surface (CLI flag, HTTP param, schema field, config key, env var) — what grammar to test | [input-surface-testing.md](input-surface-testing.md) |
 | Closing an issue (incl. epic close-out and the commit-ordering convention), writing a traceable `--reason`, syncing JSONL/DB, the git half of the close | [closing-and-sync.md](closing-and-sync.md) |
 | JSONL/DB divergence, conflict markers in JSONL, a stuck `in_progress` claim from a crashed session, `br doctor` | [recovery.md](recovery.md) |
 
@@ -171,6 +172,7 @@ These bite agents who don't know about them. Each is covered in detail in the fi
 - **Bulk operations are not transactional.** `br create -f` and other bulk mutations can partially succeed and emit warnings in the same run. Inspect `--json` output rather than trusting exit code alone. (This skill rarely uses bulk operations, but worth knowing.)
 - **`br lint` is not a generic validator.** Some rule sets check for headings inside `description` that conflict with separated-fields philosophy. Run `br lint` only if the project's rules align with separated fields.
 - **Live behavior > memorized flags.** When in doubt about a flag or output shape, `br capabilities --command <name> --format json` and `br <subcommand> --help` are the live source of truth.
+- **Input-surface changes need grammar tests, not just behavior tests.** If the work adds or changes a CLI flag, HTTP param, schema field, config key, or env var, the tests must exercise the parser/validator through the real surface — not just call the business function directly. See [input-surface-testing.md](input-surface-testing.md).
 
 ## Quick checklist for any execution session
 
@@ -180,14 +182,16 @@ These bite agents who don't know about them. Each is covered in detail in the fi
 4. **Did you read `br show <id>` *and* the epic's `agent_context` (if any) before starting?** Mid-work surprises are usually constraints that were on the parent epic.
 5. **Are you updating `notes` at milestones, not just at the end?** Context compaction is not negotiable; the only record of what happened is what you wrote.
 6. **When the work surprised you, did you correctly route the surprise** — update the current issue, spawn a new one, or stop and ask? See [discovery.md](discovery.md).
-7. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
-8. **In queue mode, did you re-check `br ready` after every close** and apply the queue-empty definition of done before reporting?
-9. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
+7. **If the issue added or changed an input surface, did you test the grammar** (not just the business behavior)? See [input-surface-testing.md](input-surface-testing.md).
+8. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
+9. **In queue mode, did you re-check `br ready` after every close** and apply the queue-empty definition of done before reporting?
+10. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
 
 ## Supporting files
 
 - **[claim-and-work.md](claim-and-work.md)** — Session start, finding ready work, the `--claim` mechanics, status transitions, retrieving an epic's `agent_context`, the read-before-claim check that catches a wrong issue before you start.
 - **[notes-discipline.md](notes-discipline.md)** — `--notes` overwrite semantics, read-before-write pattern, `--notes` vs `br comments add`, structuring a resumable progress snapshot.
 - **[discovery.md](discovery.md)** — Heuristics and worked examples for the three discovery branches: new bead needed, current bead is wrong, scope creep. Wiring `discovered-from` dependencies. When to stop and ask the user.
+- **[input-surface-testing.md](input-surface-testing.md)** — When an issue adds or changes a user-facing input surface (CLI flag, HTTP param, schema field, config key, env var), the checklist of grammar dimensions to test through the real surface. Principle: test the shape of the input, not just the downstream behavior.
 - **[closing-and-sync.md](closing-and-sync.md)** — Acceptance walkthrough, notes cleanup, traceable close reasons, the implementation-commit / close / tracker-commit ordering, epic close-out (no-code closes), `--suggest-next`, the JSONL/DB model, sync commands.
 - **[recovery.md](recovery.md)** — `sync --status` decision tree, three-way merge, force modes, JSONL conflict markers, history restore, `br doctor`, and the same-agent stuck-claim case.

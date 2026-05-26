@@ -55,7 +55,7 @@ Key concepts: the four-field content model (description=why, design=how, accepta
 
 #### [beads-to-done](agent-scripts/beads-to-done/)
 
-Agent skill for the execution phase: carrying an existing `br` issue from claim to close. Counterpart to `plan-to-beads` (which constructs issues); this skill covers everything that happens after issues already exist — claiming, working, recording progress, handling mid-work surprises, closing cleanly, and recovering from sync trouble. Solo-agent and cross-session-by-same-agent only; multi-agent / swarm features are explicitly out of scope.
+Agent skill for the execution phase: carrying an existing `br` issue from claim to close. Counterpart to `plan-to-beads` (which constructs issues); this skill covers everything that happens after issues already exist — claiming, working, recording progress, handling mid-work surprises, testing input-surface changes, closing cleanly, and recovering from sync trouble. Solo-agent and cross-session-by-same-agent only; multi-agent / swarm features are explicitly out of scope.
 
 | Document | Purpose |
 |----------|---------|
@@ -63,10 +63,11 @@ Agent skill for the execution phase: carrying an existing `br` issue from claim 
 | [claim-and-work.md](agent-scripts/beads-to-done/claim-and-work.md) | Session start, finding ready work, `--claim` mechanics, retrieving the epic's `agent_context`, read-before-claim sanity check |
 | [notes-discipline.md](agent-scripts/beads-to-done/notes-discipline.md) | `--notes` overwrite footgun, read-before-write pattern, `--notes` vs `br comments add`, structuring a resumable progress snapshot |
 | [discovery.md](agent-scripts/beads-to-done/discovery.md) | Three branches for mid-work surprises: spawn a new bead, fix the current bead, or stop and ask. Wiring `discovered-from` dependencies |
+| [input-surface-testing.md](agent-scripts/beads-to-done/input-surface-testing.md) | When an issue adds or changes a user-facing input surface (CLI flag, HTTP param, schema field, config key, env var), the checklist of grammar dimensions to test through the real surface |
 | [closing-and-sync.md](agent-scripts/beads-to-done/closing-and-sync.md) | Acceptance walkthrough, traceable close reasons, `--suggest-next`, the JSONL/DB sync model, the git half of the close |
 | [recovery.md](agent-scripts/beads-to-done/recovery.md) | `sync --status` decision tree, three-way merge, JSONL conflict markers, same-agent stuck claims, `br doctor`, exit-code gotchas |
 
-Key concepts: the JSONL is the audit trail / the DB is the working copy, `--notes` overwrites (read-before-write), the three discovery branches (new bead / current bead wrong / stop and ask), `discovered-from` dependencies for traceability, traceable close reasons (what changed + commit ref), work is not done until `git push` succeeds.
+Key concepts: the JSONL is the audit trail / the DB is the working copy, `--notes` overwrites (read-before-write), the three discovery branches (new bead / current bead wrong / stop and ask), `discovered-from` dependencies for traceability, traceable close reasons (what changed + commit ref), input-surface testing for CLI/API/config changes (test the grammar you introduced, not just the behavior), work is not done until `git push` succeeds.
 
 #### [Plan-Pact](agent-scripts/plan-pact/)
 
