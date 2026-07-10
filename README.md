@@ -41,17 +41,17 @@ Copyable skill files for Claude, Codex, and other agents. Drop a skill into your
 
 #### [plan-to-beads](agent-scripts/plan-to-beads/)
 
-Agent skill for the distillation step: translating a planning document (markdown spec, design doc, requirements list) into well-structured `br` issues — epics, hierarchical children, dependencies, and properly-separated fields. Counterpart to `beads-to-done` (which handles the execution phase); this skill covers issue construction only.
+Agent skill for the distillation step: translating a planning document (markdown spec, design doc, requirements list) into well-structured `br` issues — epics, hierarchical children, dependencies, and properly-separated fields. Counterpart to `beads-to-done` (which handles the execution phase); this skill covers issue construction only. Includes a publicability gate: when `.beads/` may be committed, pushed, or shared, every issue field is treated as a publishable artifact and scrubbed of private paths, credentials, and planning provenance before creation.
 
 | Document | Purpose |
 |----------|---------|
-| [SKILL.md](agent-scripts/plan-to-beads/SKILL.md) | Trigger, dispatch, four-field content model summary |
-| [field-semantics.md](agent-scripts/plan-to-beads/field-semantics.md) | Each field in depth: description/design/acceptance/notes, examples, anti-patterns, notes-vs-comments |
+| [SKILL.md](agent-scripts/plan-to-beads/SKILL.md) | Trigger, dispatch, four-field content model summary, publicability gate |
+| [field-semantics.md](agent-scripts/plan-to-beads/field-semantics.md) | Each field in depth: description/design/acceptance/notes, examples, anti-patterns, notes-vs-comments, public-safety rules per field |
 | [structure.md](agent-scripts/plan-to-beads/structure.md) | Epic decomposition, `--parent` hierarchical IDs, `--deps` types, `--slug` mechanics, external references |
-| [bulk-import.md](agent-scripts/plan-to-beads/bulk-import.md) | `br create -f` markdown grammar: H2/H3 structure, intra-file references, dependency syntax |
-| [agent-context.md](agent-scripts/plan-to-beads/agent-context.md) | Embedding governing instructions on epics so they surface when descendants are claimed |
+| [bulk-import.md](agent-scripts/plan-to-beads/bulk-import.md) | `br create -f` markdown grammar: H2/H3 structure, intra-file references, dependency syntax, publication scan with per-project residue list, import-file placement, post-import verification |
+| [agent-context.md](agent-scripts/plan-to-beads/agent-context.md) | Embedding governing instructions on epics so they surface when descendants are claimed; `@file` update pattern, idempotent inheritance enablement |
 
-Key concepts: the four-field content model (description=why, design=how, acceptance=done-when, notes=progress), self-contained issues (no cross-references to plan docs), epic decomposition with hierarchical child IDs, bulk markdown import for >5 related issues, governing context on epics that survives compaction.
+Key concepts: the four-field content model (description=why, design=how, acceptance=done-when, notes=progress), self-contained issues (no cross-references to plan docs), epic decomposition with hierarchical child IDs, bulk markdown import for >5 related issues, governing context on epics that survives compaction, publicability (issue fields written as public-safe artifacts from the start), post-import verification (the `br ready` root-set check proves the dependency graph resolved).
 
 #### [beads-to-done](agent-scripts/beads-to-done/)
 
