@@ -1,6 +1,13 @@
 # Setting Governing Context with `agent_context`
 
-When a plan describes constraints that apply across all the child tasks of an epic — preferred approaches, forbidden tools, review requirements, schema conventions, project-specific conventions — don't repeat them on every child issue. Set them once on the epic via `agent_context`, and let `br`'s inheritance mechanism surface them when a descendant is later worked.
+When a plan describes public-safe constraints that apply across all the child
+tasks of an epic — preferred approaches, forbidden tools, review requirements,
+schema conventions, project-specific conventions — don't repeat them on every
+child issue. Set them once on the epic via `agent_context`, and let `br`'s
+inheritance mechanism surface them when a descendant is later worked.
+
+`agent_context` is exported with Beads issue data. Treat it as publishable
+project state, not as a private scratchpad.
 
 ## The problem this solves
 
@@ -18,7 +25,7 @@ The fix: an `agent_context` field on each issue, plus optional inheritance that 
 
 `agent_context` is the only field you'd reasonably set **on the epic itself** during distillation — not on the child tasks. The whole point is that it's set once, on the governing issue, and surfaced automatically on the children later. Getting it right at creation time means future-you (after compaction, in a future session, etc.) sees the constraints without having to remember to re-read the epic first.
 
-If you don't set it during distillation, you might never set it at all — and the constraints from the plan doc get lost.
+If you don't set it during distillation, you might never set it at all — and the public-safe constraints from the plan doc get lost.
 
 ## How to set it: `br update`, not bulk grammar
 
@@ -26,7 +33,8 @@ If you don't set it during distillation, you might never set it at all — and t
 
 1. Create the epic (and its children) via bulk import.
 2. Capture the epic's ID from the `--json` output (or look it up by title).
-3. Run `br update <epic-id> --agent-context '<content>'`.
+3. Write the context JSON/YAML to a file (with a file-writing tool, not a shell
+   heredoc), then run `br update <epic-id> --agent-context @./epic-context.json`.
 
 If live behavior changes and bulk import gains an `### Agent Context` section, prefer that. Confirm with `br create --help` or `br capabilities --command create --format json` before relying on it.
 
@@ -74,22 +82,27 @@ JSON/TOON output wraps the same content in an `inherited_context` field on the r
 ## Setting `agent_context` on an epic
 
 ```bash
-# Inline JSON
-br update br-a1b2 --agent-context '{
-  "preferred_approach": "JWT with RS256, refresh via /auth/refresh",
-  "forbidden": ["session cookies", "JWT in localStorage"],
-  "review_required": true,
-  "test_baseline": "must maintain >90% coverage in auth/"
-}'
-
-# From a file (JSON or YAML)
-br update br-a1b2 --agent-context @./auth-epic-context.yaml
+# Canonical: from a file (JSON or YAML). Write the file with a file-writing
+# tool, then pass it by @path:
+br update br-a1b2 --agent-context @./auth-epic-context.json
 
 # Clear back to NULL
 br update br-a1b2 --agent-context ''
 ```
 
-`br` stores the content opaquely — the shape is yours. Choose a schema that makes sense for the kind of constraints the plan implies and stick to it. JSON or YAML are equally fine; YAML is often more readable when the constraints have prose explanations.
+Avoid passing multi-line JSON inline in single quotes — it is shell-fragile
+(zsh, for one, chokes on quote nesting in multi-line arguments and fails with
+`unmatched "`). Inline is fine only for short single-line content:
+
+```bash
+br update br-a1b2 --agent-context '{"review_required": true}'
+```
+
+`br` stores the content opaquely — the shape is yours. That flexibility makes
+`agent_context` easy to misuse. Keep it structured, brief, and public-safe.
+Choose a schema that makes sense for the kind of constraints the plan implies
+and stick to it. JSON or YAML are equally fine; YAML is often more readable when
+the constraints have prose explanations.
 
 ## What goes in `agent_context`
 
@@ -115,6 +128,23 @@ Poor candidates:
 - Single-use facts that apply to only one child — put them on that child directly
 - Anything you're not sure will still be relevant in a week — let it surface organically through `notes` or `comments` instead
 
+Never put these in `agent_context`:
+
+- local absolute paths, usernames, machine names, temp/build directories, or
+  private workspace layout;
+- credentials, secret names/values, token handling, auth validation procedures,
+  private registry/module settings, or credential-helper details;
+- legal, licensing, trademark, outreach, customer, repo-visibility, or launch
+  deliberations unless the issue is explicitly about public policy text;
+- private tag validation, private CI/release rehearsals, or commands that only
+  work with private access;
+- raw prompts, session summaries, subagent names, tool routing, mailbox/thread
+  IDs, or compaction notes;
+- historical org/module/package names that are not intentionally public.
+
+If the only reason to keep a fact is "future private-session continuity", keep
+it outside Beads or rewrite it into a public-safe constraint.
+
 ## Worked example
 
 A plan says: "Build out the auth system. Use JWT with RS256 (we rejected HS256 due to key-rotation pain). Never put JWTs in localStorage. Every PR needs a security review before merge. Coverage must stay above 90% in the auth module."
@@ -130,20 +160,22 @@ br create "Authentication System" --type epic --priority 1 \
 br update br-a1b2 \
   --acceptance-criteria "All secret endpoints require valid JWT. Invalid/expired tokens return 401. Tokens issued via /auth/login endpoint."
 
-# 2. Set the governing context (the constraints, separate from the why)
-br update br-a1b2 --agent-context '{
-  "token_format": "JWT with RS256",
-  "rejected_alternatives": ["HS256 (key-rotation pain)"],
-  "forbidden_storage": ["localStorage", "sessionStorage"],
-  "review_required": "security review on every PR before merge",
-  "coverage_floor": "90% in auth/"
-}'
+# 2. Set the governing context (the constraints, separate from the why).
+#    Write the JSON to a file first (file-writing tool, not a heredoc):
+#    auth-epic-context.json:
+#      {
+#        "token_format": "JWT with RS256",
+#        "rejected_alternatives": ["HS256 (key-rotation pain)"],
+#        "forbidden_storage": ["localStorage", "sessionStorage"],
+#        "review_required": "security review on every PR before merge",
+#        "coverage_floor": "90% in auth/"
+#      }
+br update br-a1b2 --agent-context @./auth-epic-context.json
 
-# 3. Enable inheritance for the project (one-time)
-cat >> .beads/config.yaml <<'EOF'
-inherited_context:
-  enabled: true
-EOF
+# 3. Enable inheritance for the project (one-time; guarded so a re-run
+#    doesn't append a duplicate key)
+grep -q '^inherited_context:' .beads/config.yaml 2>/dev/null || \
+  printf 'inherited_context:\n  enabled: true\n' >> .beads/config.yaml
 
 # 4. Decompose the epic into children
 br create "Design JWT token structure" --type task --parent br-a1b2 \
@@ -189,7 +221,7 @@ preferences:
 rejected:
   - <approach>: <why rejected>
 context:
-  - <relevant background>
+  - <public, durable background>
 ```
 
 Stick with one schema across a project. Mixing schemas makes the inherited blocks hard to read at a glance.

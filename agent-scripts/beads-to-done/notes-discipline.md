@@ -15,6 +15,28 @@ If `notes` is empty or stale, the future agent has to reconstruct your work from
 
 **Treat `notes` as the message-in-a-bottle you're writing to your future self after they've lost everything.** Then write accordingly.
 
+## Public-safe writing rule
+
+If `.beads/issues.jsonl` may be committed, pushed, shared, or public, notes and comments are publishable project history. They are not a private scratchpad, chat transcript, or agent session log.
+
+Record the state needed to resume:
+
+- What is completed.
+- What is in progress.
+- What is next.
+- What is blocked.
+- Which durable decision was made and why, when the rationale is technical and public-safe.
+
+Do not record private provenance or process residue:
+
+- Raw prompts, conversation snippets, "user said" attribution, session IDs, compaction summaries, subagent/tool/mail routing.
+- Local absolute paths, machine/user names, temp directories, private repo/module paths.
+- Secrets, tokens, credentials, auth headers, private registry settings, or credential validation details.
+- Legal, licensing, trademark, customer, outreach, repo-visibility, publication, or launch-gate deliberations.
+- Private tag/branch validation, private CI, internal release rehearsals, or old organization/module/package names not intended for the public record.
+
+Rewrite private context into durable project facts. For example: "Public install path is `go install github.com/org/project/cmd/tool@latest`" is useful; "Dave said after private launch discussion to use..." is not.
+
 ## The footgun: `--notes` overwrites
 
 `br update <id> --notes "..."` **replaces** the existing notes content. There is no `--append-notes` flag. If you run:
@@ -122,7 +144,7 @@ The structure scales down. What it shouldn't scale to is *nothing* — empty not
 Practical division of labor:
 
 - **Use `--notes`** for the canonical "where I am" snapshot. The thing a future agent reads first.
-- **Use `br comments add`** for things that are valuable to preserve but not load-bearing for resumption: "tried X, didn't work because Y," "considered Z, rejected because W," "user said in conversation that the priority is A over B."
+- **Use `br comments add`** for things that are valuable to preserve but not load-bearing for resumption: "tried X, didn't work because Y," "considered Z, rejected because W," "decision: prefer A over B because it preserves backward compatibility."
 
 Commands:
 
@@ -155,6 +177,7 @@ Notes is for *session-level state*. Things that don't belong:
 - **The acceptance criteria.** Those are in `acceptance`. If acceptance changed, that's a sign the issue's shape changed; see [discovery.md](discovery.md).
 - **Permanent decisions about the codebase.** Those belong in code comments, an ADR, or `design`. Notes is ephemeral by design.
 - **Conversational fragments.** "User said to do it this way" → put the decision itself in notes, not the meta-comment about who said it.
+- **Private process details.** Session names, prompts, tool/mail routing, local paths, credential checks, and launch/legal/customer deliberations belong outside committed tracker history.
 
 Said differently: if the thing you're about to write would still be relevant six months from now, it's not notes. It's `design`, or `description` (rare — usually immutable), or a code comment, or its own issue.
 
@@ -219,3 +242,4 @@ None of these are unrecoverable. All of them are avoidable by following the read
 - **Frequency**: at milestones (every ~30 min of progress), before risky ops, when context is heavy, at handoff.
 - **`--notes` is current-state**; **`br comments add` is decision-trail**. Use both, for different things.
 - **Don't put `design`/`description`/`acceptance` content in notes.** Different field, different mutability.
+- **If `.beads/` is committed or shared, keep notes/comments publishable.** Preserve technical state; omit private provenance and process residue.

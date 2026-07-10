@@ -98,6 +98,11 @@ br dep add br-42 'external:br:other-repo/br-99' --type external
 
 For cross-workspace `br` references specifically, a `.beads/routes.jsonl` file in the current workspace can map prefixes to filesystem paths so `br dep tree` knows where to point human reviewers. The routing file is a lookup table only — `br` does not mutate or sync other workspaces.
 
+For public or shared repos, avoid storing local absolute filesystem paths in
+external dependency references, routes, descriptions, or designs. Prefer stable
+public URLs or issue IDs. If a local path is only useful during private planning,
+keep it out of Beads.
+
 ## Worked example: epic with decomposition
 
 A plan that says "build an auth system with JWT issuance and a login endpoint" distills to:

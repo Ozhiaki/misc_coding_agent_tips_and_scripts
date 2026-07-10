@@ -75,6 +75,8 @@ br update <id> --notes "<previous content, trimmed>
 
 Either is fine. The goal is just: **after closing, the notes should not contain text claiming work is in flight**. A reader of `br show <closed-id>` should see a coherent picture, not a stale handoff snapshot.
 
+If `.beads/` is committed, pushed, shared, or public, also remove private process residue while cleaning notes: raw conversation fragments, "user said" attribution, session IDs, subagent/tool/mail routing, local absolute paths, credential details, private release validation, or legal/customer/outreach/launch-gate deliberations.
+
 When to skip step 2: if the notes are already a clean done-state summary (e.g., the work was small and the only note you wrote was "All done"), there's nothing to clean up. Move on.
 
 ## Step 3: the implementation commit
@@ -120,6 +122,8 @@ The reason should answer two questions:
 
 1. **What changed?** A one-line summary of the work, specific enough that a future agent could find it without re-reading the issue.
 2. **Where to find it?** A commit ref (the SHA prefix from step 3; PR number is also fine) so the diff is one click away.
+
+For public or shared `.beads/`, the reason should be traceable without exposing private provenance. Cite public commits/PRs and durable decisions. Avoid raw conversation details, "per user" attribution, local paths, private CI/tag/release validation, credential details, or legal/customer/outreach/launch deliberations.
 
 Anti-pattern → fixed:
 
@@ -167,7 +171,7 @@ Same `--reason` applies to all. If the issues legitimately had different outcome
 Not every close is a "we did the work" close. Two other shapes worth knowing:
 
 - **Obsolete** (the work is no longer relevant): `br close <id> --reason "Obsolete: replaced by br-99 which takes a different approach"` or `--reason "Obsolete: behavior already provided by commit abc1234 (unrelated work)"`.
-- **Won't fix** (we've decided not to do this): `br close <id> --reason "Won't fix: per user, the cost of the migration outweighs the benefit; behavior accepted as-is"`.
+- **Won't fix** (we've decided not to do this): `br close <id> --reason "Won't fix: migration cost outweighs benefit; behavior accepted as-is"` or `--reason "Won't fix: superseded by br-99 and current behavior is documented."`.
 
 These are still traceable reasons — they explain why the issue is closed, not just that it is.
 
@@ -396,7 +400,7 @@ The fix in every case is the six-step sequence (plus epic close-out when appropr
 For every close:
 
 1. **`br show <id>`** — read the acceptance criteria, confirm each is met. If the issue changed an input surface, confirm grammar tests exist (see [input-surface-testing.md](input-surface-testing.md)).
-2. **Clean up notes** — strip `IN_PROGRESS` / `NEXT` / `BLOCKERS` lines that no longer apply.
+2. **Clean up notes** — strip `IN_PROGRESS` / `NEXT` / `BLOCKERS` lines that no longer apply, plus private residue if `.beads/` is committed or shared.
 3. **Implementation commit first** — `git add <implementation>` (NOT `.beads/`), `git commit`, capture the SHA.
 4. **`br close <id> --reason "..." --suggest-next --json`** — reason includes *what* and the SHA from step 3.
 5. **`br sync --flush-only`** — idempotent check, near-zero cost, prevents the silent-skip failure mode.

@@ -30,6 +30,32 @@ Concretely this rules out phrases like:
 
 The test: could a fresh agent implement this from `br show` alone? If no, rewrite with the actual information inline.
 
+## Publicability gate
+
+`br` issues are project data. If `.beads/issues.jsonl` may be committed, pushed,
+shared with other agents, or made public later, treat every issue field as a
+publishable artifact from the start. "Self-contained" means distill the
+work-relevant public facts, not copy the whole planning conversation.
+
+Before creating or updating issues, remove or rewrite:
+
+- local absolute paths, workstation names, usernames, private repo paths, and
+  transient temp/build directories;
+- secrets, tokens, credential-helper details, private registry/module settings,
+  auth headers, or credential validation procedures;
+- legal, licensing, trademark, publication, customer, outreach, or launch-gate
+  deliberations unless the issue is explicitly about public policy wording;
+- private branch/tag validation steps, private CI credentials, and internal
+  release rehearsal details;
+- agent coordination residue: session IDs, subagent names, mail/tool routing,
+  compaction notes, raw prompts, and "Dave said" conversational context;
+- old or alternate org/module/package names that are not part of the intended
+  public migration history.
+
+If a detail is needed only for the current private session, keep it in the chat,
+a local uncommitted scratch file, or a redacted private plan. Do not place it in
+`description`, `design`, `acceptance`, `notes`, comments, or `agent_context`.
+
 ## The four-field content model
 
 This is the heart of the skill. `br` provides distinct fields for distinct purposes. Conflating them — especially stuffing everything into `description` — is the single most common failure mode.
@@ -82,11 +108,18 @@ See [structure.md](structure.md) for ID-shape mechanics, dependency types, and p
 
 ## Setting governing context on epics
 
-When a plan implies constraints that apply across all its child tasks (preferred approaches, forbidden tools, review requirements, schema conventions), don't repeat them on every child issue — set them once on the epic via `agent_context`, and let `br`'s inheritance surface them when an agent later claims a child.
+When a plan implies public-safe constraints that apply across all its child
+tasks (preferred approaches, forbidden tools, review requirements, schema
+conventions), don't repeat them on every child issue — set them once on the
+epic via `agent_context`, and let `br`'s inheritance surface them when an agent
+later claims a child.
 
 This is especially valuable for solo work across sessions: future-you (after compaction or session restart) will see the epic's governing instructions when claiming any descendant, without having to remember to read the epic first.
 
-See [agent-context.md](agent-context.md) for the schema, the per-project enable flag, and how inheritance surfaces.
+Do not use `agent_context` for private process state, legal/publication gates,
+credentials, local paths, private validation commands, or raw planning
+provenance. See [agent-context.md](agent-context.md) for the schema, the
+per-project enable flag, inheritance behavior, and publicability rules.
 
 ## Quick checklist before creating any issue
 
@@ -95,6 +128,8 @@ See [agent-context.md](agent-context.md) for the schema, the per-project enable 
 3. **Design**: Is this *how* I'll solve it, kept separate from *what* I'm solving? (Often empty at create time, filled via `br update` as the approach crystallizes.)
 4. **Acceptance**: Could a verifier confirm completion from these criteria alone?
 5. **Structure**: Are parent/dep links correct? Is the epic-vs-task choice right?
+6. **Publicability**: Would every field be acceptable in a public
+   `.beads/issues.jsonl` export? If not, redact before creating the issue.
 
 If any answer is "no" or "I'm not sure" — fix it before moving on, or note the gap in the issue's design field for follow-up.
 

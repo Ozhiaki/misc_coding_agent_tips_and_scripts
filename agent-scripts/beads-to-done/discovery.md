@@ -4,6 +4,23 @@ You're working an issue and something unexpected shows up. This file is the deci
 
 The discipline matters because the alternatives — silently expanding the current issue, or burying the surprise in code and moving on — both look easier in the moment and both cost more later. The current issue becomes a kitchen sink; the surprise gets forgotten until it bites a future session.
 
+## Public-safe discovery capture
+
+Discovery often happens in the messiest part of a session. If `.beads/issues.jsonl` may be committed, pushed, shared, or public, slow down before writing notes, comments, or new issues. Capture the technical fact and durable decision; do not capture private provenance.
+
+Good durable content:
+
+- "Acceptance was updated because the prior criterion was unverifiable against the API schema."
+- "Blocked pending product decision between per-IP and per-account rate limiting."
+- "Filed br-99 for deprecated API migration; not blocking current work."
+
+Do not write:
+
+- Raw conversation fragments, "user said" attribution, session IDs, subagent/tool/mail routing, or compaction summaries.
+- Local absolute paths, private repo/module names, credentials, private registry settings, auth validation details.
+- Legal, licensing, trademark, customer, outreach, repo-visibility, publication, or launch-gate deliberations.
+- Private tag/branch validation, private CI, internal release rehearsals, or old organization/module/package names not intended for the public record.
+
 ## The three branches
 
 Almost every mid-work surprise resolves into one of three branches:
@@ -141,7 +158,7 @@ br update <id> --design "<new approach reflecting reality>"
 Then `br comments add` with the rationale:
 
 ```bash
-br comments add <id> "Original design called for using foo.NewClient(...) but that constructor was removed in foo v0.18 (released 2026-04). Switched to foo.MustNewClient with explicit config. Verified upstream docs at <url>."
+br comments add <id> "Design updated: foo.NewClient(...) was removed in foo v0.18. Switched to foo.MustNewClient with explicit config, matching upstream public docs."
 ```
 
 This is also a good moment to update `notes` to reflect that the approach changed:
@@ -182,14 +199,14 @@ When the surprise crosses a line that's not yours to cross alone, stop. The line
 What to do:
 
 1. **Stop coding.** Don't keep working "while waiting" — that's how scope creeps.
-2. **Update `notes`** with where you are and what you found:
+2. **Update `notes`** with where you are and what you found, written as a public-safe project state summary:
 
     ```bash
     br update <id> --notes "<previous content>
     ---
-    2026-05-25 STOPPED: <one-line summary of the surprise and why it requires user input>.
+    2026-05-25 STOPPED: <one-line public-safe summary of the surprise and why it requires user input>.
     State at stop: <what's done, what's not>.
-    Question: <the specific question the user needs to answer>."
+    Question: <the specific public-safe question the user needs to answer>."
     ```
 
 3. **Surface the question to the user.** Concisely. With enough context that they can answer without re-reading the issue.
@@ -263,7 +280,7 @@ JSON encoding includes the field with its actual value (no omitempty — would c
 When decoding JSON that has no Sensitive key (legacy records), the resulting SecretObject has Sensitive: true (via custom UnmarshalJSON or post-decode backfill)."
 
 # Record why
-br comments add br-43 "Updated acceptance: original wording had a bug — said 'JSON omits field when true (omitempty)' but omitempty omits zero values (false for bool), not true. Confirmed with user-doc that intent is 'legacy records default to true on load.' Rewrote to match intent."
+br comments add br-43 "Updated acceptance: original wording conflicted with bool omitempty semantics. Rewrote criteria so legacy records without Sensitive default to true on load."
 
 # Update notes to reflect state
 br update br-43 --notes "<previous>

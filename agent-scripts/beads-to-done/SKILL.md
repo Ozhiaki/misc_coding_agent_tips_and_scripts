@@ -31,6 +31,21 @@ Every mutation — claim, status change, notes update, close — flows through `
 
 The single most useful mental model: **the issue's fields are the only source of truth for the work**. After a session restart or context compaction, the agent will see only what `br show <id>` returns. Anything kept in conversation context but not written to the issue is gone. Resumability is a property of how the agent writes, not of how clever the next session is.
 
+## Publicability gate
+
+If `.beads/issues.jsonl` may be committed, pushed, shared, or made public, treat every issue field, note, comment, close reason, assignee, and audit-adjacent string as publishable project history.
+
+Write durable Beads content as if a new contributor could read it on GitHub. Preserve the technical state needed to resume; omit or rewrite private process residue:
+
+- Local absolute paths, workstation names, usernames, temp/build directories, private repo paths.
+- Secrets, tokens, credential helpers, auth headers, private registry/module settings, or credential validation details.
+- Legal, licensing, trademark, customer, outreach, repo-visibility, publication, or launch-gate deliberations unless the public issue is explicitly about wording a public policy.
+- Private branch/tag validation, private CI details, internal release rehearsals, or non-public distribution checks.
+- Raw prompts, conversation fragments, session IDs, subagent names, mailbox/tool routing, compaction notes, or "user said" provenance.
+- Old/alternate organization, module, package, or product names not intended for the public record.
+
+When a private detail explains the work, record the durable decision instead: "Use public install path X" is useful; "Dave said in session Y after private release discussion" is not.
+
 ## The execution loop at a glance
 
 ```bash
@@ -183,9 +198,10 @@ These bite agents who don't know about them. Each is covered in detail in the fi
 5. **Are you updating `notes` at milestones, not just at the end?** Context compaction is not negotiable; the only record of what happened is what you wrote.
 6. **When the work surprised you, did you correctly route the surprise** — update the current issue, spawn a new one, or stop and ask? See [discovery.md](discovery.md).
 7. **If the issue added or changed an input surface, did you test the grammar** (not just the business behavior)? See [input-surface-testing.md](input-surface-testing.md).
-8. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
-9. **In queue mode, did you re-check `br ready` after every close** and apply the queue-empty definition of done before reporting?
-10. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
+8. **Did you keep notes/comments/reasons publishable** if `.beads/` is committed or shared? See "Publicability gate" above.
+9. **Does the close `--reason` include both a summary and a commit ref?** "Done" or "Implemented" leaves the next agent with nothing.
+10. **In queue mode, did you re-check `br ready` after every close** and apply the queue-empty definition of done before reporting?
+11. **Did `git push` succeed?** Work is not done until the JSONL is on the remote.
 
 ## Supporting files
 

@@ -23,6 +23,40 @@ br create --file /path/to/import.md --json
 
 Rough triggers for the temp-repo path: 20+ issues in one import; heavy use of symbolic `### ID` / `### Parent` / blocking dependencies; the `.beads/` directory is shared or about to be committed; or you're unsure whether installed `br` behavior matches this skill's docs.
 
+**Publication scan**: when `.beads/` may be committed, pushed, shared, or made
+public, scan the import markdown and resulting JSON before touching the real
+workspace. Look for private paths, private module/org names, credentials,
+private tag/install validation, legal/publication gates, raw prompts, agent
+coordination residue, and local-only plan provenance.
+
+Useful pattern:
+
+```bash
+rg -n -e '/Users/' -e '/home/' -e 'GOPRIVATE|GONOSUMDB|TOKEN|SECRET|PASSWORD' \
+  -e 'private tag|private validation|private repo|no license|LICENSE_PENDING' \
+  -e 'legal|trademark|outreach|launch gate' import.md
+```
+
+The canned pattern only catches generic residue. Before scanning, build a
+short **project-specific residue list** and append it: the project's prior or
+working names, private planning-doc filenames (roadmaps, parent specs), the
+owner's name, and session provenance phrases ("owner ruling", "as decided",
+"per the spec"). These are exactly the leaks the generic pattern misses:
+
+```bash
+rg -n -e '<old-codename>' -e 'ROADMAP|SPEC-' -e '<owner-name>' \
+  -e 'owner ruling|parent spec|as decided' import.md
+```
+
+**Placement of the import file**: when the repo is public or shared, keep the
+import markdown *outside the working tree* (or in an explicitly gitignored
+path). It is a raw planning artifact; inside the tree, a later bulk `git add`
+publishes it. Choosing its location is part of the distillation procedure,
+not an afterthought.
+
+For large imports, create in a temp repo, inspect the exported JSONL, then
+discard the temp repo and only import into the real workspace after redaction.
+
 **Before bulk-creating**: confirm `issue_prefix` matches the project (`br config get issue_prefix --json`; set with `br config set issue_prefix=<name>` if wrong — prefix changes only affect *new* issues). Never edit `.beads/issues.jsonl` by hand; all mutations go through `br` so the DB and JSONL stay in sync.
 
 The grammar exists *so that field separation is preserved* in batch creation, not as an excuse to collapse fields together. Each issue's `### Description`, `### Design`, and `### Acceptance` sections should still separate why/how/done-when — see [field-semantics.md](field-semantics.md).
@@ -57,6 +91,11 @@ Content for that section.
 | `### Dependencies` or `### Deps` | `--deps` | See dependency syntax below |
 
 Unknown H3 sections are silently ignored. Section names are case-insensitive (`### priority`, `### PRIORITY`, `### Priority` all parse identically).
+
+Do not rely on unknown H3 sections for private notes. They are ignored by the
+importer, but the import markdown itself may still be committed, archived, or
+copied into `.beads/imports/` by local workflow. Keep private planning material
+out of the import artifact.
 
 ### Dependency syntax in `### Dependencies`
 
@@ -205,6 +244,45 @@ br create -f auth-system-issues.md --json
 ```
 
 All three issues created. The two tasks are linked to the epic via `### Parent` (title-resolved). The login endpoint task is linked to the JWT design task via `### Dependencies` (title-resolved).
+
+## Verifying the import landed
+
+`br create -f --json` echoes every created issue **in full** — descriptions,
+designs, acceptance — easily tens of KB for a mid-size import, when the
+verification question is just "did it land cleanly?". Don't read the raw
+output; summarize it:
+
+```bash
+br create --file import.md --json | python3 -c "
+import json, sys
+raw = sys.stdin.read()
+i = raw.index('[{')
+if raw[:i].strip(): print('PREAMBLE (check for warnings):', raw[:i].strip())
+d = json.loads(raw[i:])
+print('created:', len(d))
+for x in d: print(x['id'], '|', x['issue_type'], '| P%s' % x['priority'], '|', x['title'][:50])
+"
+```
+
+Anything printed before the JSON array is where dependency warnings surface
+(the import is not transactional — issues can be created *and* warnings
+emitted in the same run).
+
+Then run three checks:
+
+1. **Count**: created count equals the number of `## ` H2 issues you wrote.
+2. **Root set**: `br ready` must return exactly the issues you intended as
+   dependency roots (typically the first task of the chain). This is a
+   one-shot proof the blocks-graph resolved: if a dep reference silently
+   failed, the orphaned issue shows up as spuriously ready.
+3. **Heaviest node**: `br show <id> --json` on the issue with the most
+   dependencies; confirm every edge (parent-child plus each blocks) is
+   present.
+
+Quirk to know: `br dep tree <epic-id>` on the *epic* prints only the epic's
+own line — trees render from dependents upward, not from parents downward —
+which can look like a failed import. Verify from a child (`br dep tree
+<child-id>`) or use the `br ready` root-set check instead.
 
 ## When to prefer bulk import vs. individual `br create`
 

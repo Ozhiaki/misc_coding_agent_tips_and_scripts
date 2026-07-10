@@ -81,6 +81,8 @@ For details on ID shape (`--parent` hierarchical IDs vs. `--slug` top-level IDs)
 - Success criteria (those go in `acceptance`)
 - Progress updates (those go in `notes`)
 - References to outside planning documents (the issue must stand alone)
+- Private planning provenance, legal/publication gates, local paths,
+  credentials, or private release validation details
 
 **Setting at create time**:
 
@@ -150,6 +152,11 @@ Skip code for standard patterns, obvious-from-description code, or single-sessio
 
 Code **never** belongs in `description` (problem statement, immutable) or `acceptance` (success criteria, not implementation).
 
+Do not include commands or snippets that depend on private credentials, private
+module access, local absolute paths, private CI state, or non-public release
+rehearsals unless the issue is explicitly about removing or publicizing that
+workflow. Rewrite them as public-safe checks or keep them outside Beads.
+
 ---
 
 ## acceptance (`--acceptance-criteria`)
@@ -216,6 +223,13 @@ If you can't write clear acceptance criteria, you don't understand the problem y
 - Decisions made and why
 - Handoff context for the next session
 
+**Should NOT contain**:
+- Secrets, credentials, auth flow details, or private install settings
+- Local absolute paths or machine-specific workspace layout
+- Legal, licensing, customer, outreach, trademark, or publication deliberation
+- Raw prompts, subagent routing, mailbox/thread IDs, or compaction summaries
+- Anything that would need to be scrubbed before publishing `.beads/issues.jsonl`
+
 **Read-before-write pattern**:
 
 ```bash
@@ -250,6 +264,9 @@ br comments list br-42 --format json  # machine-readable
 ```
 
 For the plan-to-Beads phase specifically: usually neither matters yet at creation time. They become relevant once an agent starts working the issue. Worth knowing about so you don't try to stuff session history into `description`.
+
+Comments are exported project data too. Use them for durable public audit
+history, not for private session scratch notes.
 
 ---
 
@@ -360,3 +377,4 @@ br update br-200 \
 | **The Scope Creep** | Multiple unrelated concerns in one issue | Split into separate issues; link with `--deps` if related |
 | **The Cross-Reference** | "See plan-v2.md for details" | Distill the plan into the issue's fields; archive the plan |
 | **Code in description** | Confuses problem statement with implementation | Code goes in `design` or `notes`, never `description` or `acceptance` |
+| **Private provenance** | Local paths, credentials, legal gates, private validation, or raw agent context become publishable Beads data | Redact or keep it outside Beads before issue creation |

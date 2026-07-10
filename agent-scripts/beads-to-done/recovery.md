@@ -113,13 +113,13 @@ The fix:
 br show <id>
 
 # 2. Add an audit comment recording the reclaim
-br comments add <id> "Same-agent reclaim: previous session of this agent did not close out. Reclaiming to resume."
+br comments add <id> "Same-actor reclaim: issue was left in progress without a current handoff. Reclaiming to resume from recorded notes."
 
 # 3. Force re-claim
 br update <id> --claim --force
 ```
 
-The `--force` is what gets you past the "already assigned" check. The audit comment keeps the trail honest: a future read of `br audit log <id>` plus `br comments list <id>` will show what happened.
+The `--force` is what gets you past the "already assigned" check. The audit comment keeps the trail honest: a future read of `br audit log <id>` plus `br comments list <id>` will show what happened. In public or shared `.beads/`, keep this comment factual and publishable; don't include session IDs, raw prompts, tool routing, or private failure details.
 
 If past-you's notes are empty or sparse, treat the issue as if you've never seen it — re-read `description`, `acceptance`, and the parent epic's `agent_context`. Don't assume past-you got far; you might be starting closer to scratch than you think.
 
